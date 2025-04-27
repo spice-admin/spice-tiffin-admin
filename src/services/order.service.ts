@@ -3,7 +3,8 @@ import type { ApiResponse, IOrderAdminFE } from "../types";
 
 // Constants (use Admin Panel's token key if different)
 const API_BASE_URL =
-  import.meta.env.PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1"; // Use Admin's env var
+  import.meta.env.PUBLIC_API_BASE_URL ||
+  "https://spice-tiffin-backend-production.up.railway.app/api/v1"; // Use Admin's env var
 const ORDER_ENDPOINT = `${API_BASE_URL}/orders`;
 const AUTH_TOKEN_KEY = "token";
 

@@ -3,7 +3,8 @@ import type { ApiResponse, ICustomerAdminFE } from "../types"; // Import relevan
 
 // Constants
 const API_BASE_URL =
-  import.meta.env.PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1";
+  import.meta.env.PUBLIC_API_BASE_URL ||
+  "https://spice-tiffin-backend-production.up.railway.app/api/v1";
 // Use the correct endpoint based on your backend routes
 const ADMIN_ENDPOINT = `${API_BASE_URL}/admin`;
 const AUTH_TOKEN_KEY = "token"; // Use the key where admin token is stored
