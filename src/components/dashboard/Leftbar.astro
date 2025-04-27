@@ -1,0 +1,56 @@
+---
+import { menu } from "../../data/adminMenuList";
+---
+
+<div class="startbar d-print-none">
+  <div class="brand">
+    <a href="/" class="logo">
+      <img
+        src="/assets/images/logo-main.png"
+        alt="Logo"
+        class="logo-sm"
+        style="height: 45px;"
+      />
+      <img
+        src="/assets/images/logo-main.png"
+        alt="Logo"
+        class="logo-lg"
+        style="height: 65px;"
+      />
+    </a>
+  </div>
+
+  <div class="startbar-menu">
+    <div class="startbar-collapse" data-simplebar>
+      <ul class="navbar-nav mb-auto w-100">
+        {
+          menu.map((section) => (
+            <>
+              <li class="menu-label mt-2">
+                <span>{section.label}</span>
+              </li>
+              {section.items.map((item: any) => (
+                <li class="nav-item">
+                  <a
+                    class="nav-link d-flex align-items-center gap-2"
+                    href={item.href}
+                  >
+                    <item.icon class="lucide-icon" />
+                    <span>{item.title}</span>
+                  </a>
+                </li>
+              ))}
+            </>
+          ))
+        }
+        <li class="nav-item">
+          <a class="nav-link text-danger" href="#" onclick="logoutAdmin()">
+            <iconify-icon icon="solar:logout-2-bold-duotone" class="menu-icon"
+            ></iconify-icon>
+            <span>Logout</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>

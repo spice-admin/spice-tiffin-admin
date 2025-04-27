@@ -1,0 +1,64 @@
+---
+// src/pages/package-management.astro
+import Layout from "../layouts/Layout.astro"; // Your main layout
+import ProtectDashboard from "../components/auth/ProtectDashboard"; // Auth protection
+import Leftbar from "../components/dashboard/Leftbar.astro"; // Sidebar
+import Topbar from "../components/dashboard/Topbar.astro"; // Top navigation
+import PageTitle from "../components/dashboard/PageTitle.astro"; // Page title breadcrumb area
+import PackageManagerWrapper from "../components/management/PackageManagerWrapper"; // Import the NEW React wrapper
+
+const pageTitle = "Packages";
+---
+
+<Layout title={pageTitle}>
+  {/* Authentication Wrapper */}
+  <ProtectDashboard client:only="react" />
+
+  {/* Dashboard Layout Components */}
+  <Topbar title={pageTitle} />
+  <Leftbar />
+  <PageTitle title={pageTitle} activePage="Manage Packages" />
+
+  {/* Main Content Area - Matching your structure */}
+  <div class="page-wrapper">
+    <div class="page-content">
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-lg-12">
+            {
+              /*
+              The PackageManagerWrapper will now render the Card,
+              Card Header (including the Add button), and Card Body
+              internally to better manage state and interactions.
+            */
+            }
+            <PackageManagerWrapper client:load />
+          </div>
+        </div>
+      </div>
+
+      {/* Footer - Copied from your example */}
+      <footer class="footer text-center text-sm-start d-print-none">
+        <div class="container-fluid">
+          <div class="row">
+            <div class="col-12 px-0">
+              <div class="card mb-0 border-0 rounded-bottom-0">
+                {/* Adjusted: Added rounded-bottom-0 */}
+                <div class="card-body">
+                  <p class="text-muted mb-0">
+                    © {new Date().getFullYear()}
+                    Your Company Name {/* TODO: Update Company Name */}
+                    <span class="float-end d-none d-sm-inline-block">
+                      {/* Optional: Add designed by text if needed */}
+                      Design by <strong>IGNITAX</strong>
+                    </span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </div>
+</Layout>

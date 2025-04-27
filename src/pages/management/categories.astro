@@ -1,0 +1,68 @@
+---
+import ProtectDashboard from "../../components/auth/ProtectDashboard";
+import Leftbar from "../../components/dashboard/Leftbar.astro";
+import PageTitle from "../../components/dashboard/PageTitle.astro";
+import Topbar from "../../components/dashboard/Topbar.astro";
+import Layout from "../../layouts/Layout.astro";
+import CategoryTable from "../../components/management/CategoryTable.tsx";
+import ManageCategoryModal from "../../components/management/ManageCategoryModal.tsx";
+import CategoryManagerWrapper from "../../components/management/CategoryManagerWrapper";
+---
+
+<Layout>
+  <ProtectDashboard client:only="react" />
+  <Topbar title="Categories" />
+  <Leftbar />
+  <PageTitle title="Categories" activePage="Manage Categories" />
+
+  <div class="page-wrapper">
+    <div class="page-content">
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-lg-12">
+            <div class="card">
+              <div class="card-header">
+                <div class="row align-items-center">
+                  <div class="col">
+                    <h4 class="card-title">Categories</h4>
+                  </div>
+                  <div class="col-auto">
+                    <button
+                      class="btn btn-sm btn-primary"
+                      data-bs-toggle="modal"
+                      data-bs-target="#categoryModal"
+                    >
+                      <i class="fas fa-plus me-1"></i> Add Category
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="card-body pt-0">
+                <CategoryManagerWrapper client:load />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <footer class="footer text-center text-sm-start d-print-none">
+        <div class="container-fluid">
+          <div class="row">
+            <div class="col-12 px-0">
+              <div class="card mb-0 border-0">
+                <div class="card-body">
+                  <p class="text-muted mb-0">
+                    © {new Date().getFullYear()}
+                    Spicebar Indian Street Food
+                    <span class="float-end d-none d-sm-inline-block">
+                      Design by <strong>IGNITAX</strong>
+                    </span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </div>
+</Layout>
