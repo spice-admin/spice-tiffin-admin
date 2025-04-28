@@ -189,3 +189,56 @@ export interface ICityAdminFE {
 export interface ICityFormData {
   name: string;
 }
+
+export interface IAdminCustomerPopulated {
+  _id: string;
+  fullName: string;
+  email?: string; // Make optional if not always selected/present
+  phone?: string; // Make optional
+  address?: {
+    // Make address object optional if customer might not have one
+    address?: string;
+    city?: string;
+    postalCode?: string;
+    // Add other address fields if populated by the backend
+  };
+  // Add other customer fields if needed
+}
+
+// Interface for the populated package data in admin order view
+export interface IAdminPackagePopulated {
+  _id: string;
+  name: string;
+  type?: string; // Make optional if not always selected/present
+  duration?: number; // Make optional
+  // Add other package fields if needed
+}
+
+// Interface for the Order data specific to the admin's active orders view
+export interface IAdminOrderFE {
+  _id: string;
+  orderNumber: string;
+  customer: IAdminCustomerPopulated | null; // Can be null if population fails
+  package: IAdminPackagePopulated | null; // Can be null if population fails
+  startDate: string; // Dates will likely be strings from JSON
+  endDate: string;
+  status: "Active" | "Expired" | "Cancelled"; // Use the enum values
+  deliveryAddress: {
+    // Use the structure defined in the Order model
+    address?: string;
+    city?: string;
+    postalCode?: string;
+    currentLocation?: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+  // Add other fields if needed
+}
+
+// Interface for the API response structure
+export interface IAdminGetActiveOrdersResponse {
+  success: boolean;
+  message: string;
+  count: number;
+  data: IAdminOrderFE[];
+}
