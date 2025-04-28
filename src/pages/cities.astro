@@ -1,0 +1,60 @@
+---
+// src/pages/cities.astro (Admin Panel)
+import Layout from "../layouts/Layout.astro"; // Use Admin Panel Layout
+import ProtectDashboard from "../components/auth/ProtectDashboard"; // Admin Auth Guard
+import Leftbar from "../components/dashboard/Leftbar.astro"; // Admin Sidebar
+import Topbar from "../components/dashboard/Topbar.astro"; // Admin Topbar
+import PageTitle from "../components/dashboard/PageTitle.astro"; // Admin Page Title
+import CityManagerWrapper from "../components/management/CityManagerWrapper.tsx"; // Import the React component
+
+const pageTitle = "Cities";
+---
+
+<Layout title={`Manage ${pageTitle}`}>
+  {/* Admin Authentication Wrapper */}
+  <ProtectDashboard client:only="react" />
+  {/* Ensure this checks for ADMIN token */}
+
+  {/* Dashboard Layout Components */}
+  <Topbar title={pageTitle} />
+  <Leftbar />
+  <PageTitle title={pageTitle} activePage="Manage Cities" />
+
+  {/* Main Content Area */}
+  <div class="page-wrapper">
+    <div class="page-content">
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-lg-12">
+            {/* Render the React component */}
+            <CityManagerWrapper client:load />
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <footer class="footer text-center text-sm-start d-print-none">
+        <div class="container-fluid">
+          <div class="row">
+            <div class="col-12 px-0">
+              <div class="card mb-0 border-0 rounded-bottom-0">
+                <div class="card-body">
+                  <p class="text-muted mb-0">
+                    © {new Date().getFullYear()} Your Company Name
+                    <span class="float-end d-none d-sm-inline-block">
+                      Design by <strong>IGNITAX</strong>
+                    </span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </div>
+</Layout>
+
+{
+  /* Ensure necessary global CSS (Bootstrap, Font Awesome, custom styles) is loaded via Layout.astro */
+}

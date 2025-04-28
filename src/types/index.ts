@@ -172,3 +172,20 @@ export interface ICustomerAdminFE {
   createdAt: string; // ISO Date string
   updatedAt: string; // ISO Date string
 }
+
+// --- NEW: City Type for Admin Panel ---
+/**
+ * Represents a City as fetched/managed in the Admin Panel.
+ * Mirrors the backend ICity model structure.
+ */
+export interface ICityAdminFE {
+  _id: string;
+  name: string;
+  createdAt: string; // ISO Date string
+  updatedAt: string; // ISO Date string
+}
+
+// Type for the Add/Edit City form data
+export interface ICityFormData {
+  name: string;
+}
