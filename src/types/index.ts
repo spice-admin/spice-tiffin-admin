@@ -135,23 +135,40 @@ export interface IDeliveryAddressFE {
   city?: string | null;
   postalCode?: string | null;
   currentLocation?: string | null;
+  // --- ADD THESE LINES ---
+  latitude?: number | null; // Add latitude (make optional/nullable if geocoding might fail)
+  longitude?: number | null; // Add longitude (make optional/nullable if geocoding might fail)
+  // -----------------------
+}
+
+export enum DeliveryStatusFE {
+  PENDING_ASSIGNMENT = "Pending Assignment",
+  ASSIGNED = "Assigned",
+  OUT_FOR_DELIVERY = "Out for Delivery",
+  DELIVERED = "Delivered",
+  FAILED = "Failed",
+  CANCELLED = "Cancelled",
 }
 
 export interface IOrderAdminFE {
   _id: string;
   orderNumber: string;
-  customer: IOrderCustomerInfo; // Populated customer info
-  package: IOrderPackageInfo; // Populated package info
-  packageName: string; // Denormalized
-  packagePrice: number; // Denormalized
-  deliveryDays: number; // Denormalized
-  startDate: string; // ISO Date string
-  endDate: string; // ISO Date string
-  status: OrderStatus;
-  deliveryAddress: IDeliveryAddressFE; // Full address might be needed
-  paymentDetails: PaymentDetailsBase; // Full payment details might be needed
-  createdAt: string; // ISO Date string
-  updatedAt: string; // ISO Date string
+  customer: IOrderCustomerInfo | null; // Handle potential null population
+  package: IOrderPackageInfo | null; // Handle potential null population
+  packageName: string;
+  packagePrice: number;
+  deliveryDays: number;
+  startDate: string;
+  endDate: string;
+  status: OrderStatus; // Original status
+  deliveryStatus: DeliveryStatusFE; // Use the new delivery status
+  deliveryAddress: IDeliveryAddressFE;
+  paymentDetails?: PaymentDetailsBase; // Make optional if not always present/needed
+  assignedDriver?: { _id: string; fullName: string } | null; // Include basic driver info if populated
+  deliverySequence?: number | null; // <-- ADDED: Sequence number (optional, nullable)
+  proofOfDeliveryUrl?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /**

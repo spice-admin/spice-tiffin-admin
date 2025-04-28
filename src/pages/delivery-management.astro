@@ -1,0 +1,77 @@
+---
+// src/pages/delivery-management.astro
+// --- Layout & Auth ---
+import Layout from "../layouts/Layout.astro"; // Adjust path to your main layout
+import ProtectDashboard from "../components/auth/ProtectDashboard"; // Adjust path
+
+// --- Dashboard Components ---
+import Leftbar from "../components/dashboard/Leftbar.astro"; // Adjust path
+import Topbar from "../components/dashboard/Topbar.astro"; // Adjust path
+import PageTitle from "../components/dashboard/PageTitle.astro"; // Adjust path
+
+// --- React Wrapper Component ---
+import DeliveryManagerWrapper from "../components/management/DeliveryManagerWrapper"; // Adjust path
+
+// --- Page Configuration ---
+const pageTitle = "Delivery Management";
+---
+
+<Layout title={pageTitle}>
+  {/* Authentication Wrapper */}
+  <ProtectDashboard client:only="react" />
+
+  {/* Dashboard Layout Components */}
+  <Topbar title={pageTitle} />
+  <Leftbar />
+  <PageTitle title={pageTitle} activePage="Manage Deliveries" />
+  {/* Update breadcrumb */}
+
+  {/* Main Content Area */}
+  <div class="page-wrapper">
+    <div class="page-content">
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-lg-12">
+            {
+              /* Render the main React component that handles the delivery management UI */
+            }
+            <DeliveryManagerWrapper client:only="react" />
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <footer class="footer text-center text-sm-start d-print-none">
+        <div class="container-fluid">
+          <div class="row">
+            <div class="col-12 px-0">
+              <div class="card mb-0 border-0 rounded-bottom-0">
+                <div class="card-body">
+                  <p class="text-muted mb-0">
+                    © {new Date().getFullYear()} Your Company Name {
+                      /* TODO: Update */
+                    }
+                    <span class="float-end d-none d-sm-inline-block">
+                      Design by <strong>IGNITAX</strong>
+                      {/* Optional */}
+                    </span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </div>
+</Layout>
+
+<style is:global>
+  /* Add any page-specific global styles here if needed */
+  /* Ensure map container styles are handled correctly if using Leaflet/Mapbox */
+  .map-container {
+    height: 500px; /* Example height, adjust as needed */
+    width: 100%;
+    margin-bottom: 1rem; /* Spacing below map */
+  }
+</style>
