@@ -1,62 +1,20 @@
 // src/components/management/DriverTable.tsx
+
 import React from "react";
-import type { IDriverFE, DriverStatus } from "../../types";
+import type { IDriverFE } from "../../types"; // Adjust path
 
-// --- Avatar Component (Reuse or adapt from CustomerTable if needed) ---
-const DriverAvatar = ({
-  src,
-  name,
-  className,
-}: {
-  src?: string;
-  name: string;
-  className?: string;
-}) => {
-  const [imageError, setImageError] = React.useState(false);
-  const defaultStyle: React.CSSProperties = {
-    width: "40px",
-    height: "40px",
-    objectFit: "cover",
-  };
-  const fallbackInitial = name ? name.charAt(0).toUpperCase() : "?";
+interface DriverTableProps {
+  drivers: IDriverFE[];
+  isLoading: boolean; // Loading state for initial fetch/empty table
+  isActionLoading: boolean; // Loading state for disabling actions during operations
+  onEdit: (driver: IDriverFE) => void;
+  onDelete: (id: string) => void;
+}
 
-  const showImage = src && !imageError;
-
-  const handleImageError = () => {
-    console.warn(`Failed to load image: ${src}`);
-    setImageError(true);
-  };
-
-  return (
-    <>
-      {showImage ? (
-        <img
-          src={src}
-          alt={`${name}'s avatar`}
-          className={`rounded-circle ${className || ""}`}
-          style={defaultStyle}
-          onError={handleImageError}
-          loading="lazy"
-        />
-      ) : (
-        <div
-          className={`d-flex align-items-center justify-content-center bg-info text-white rounded-circle fw-bold ${
-            className || ""
-          }`} // Different color maybe
-          style={defaultStyle}
-          title={name}
-        >
-          {fallbackInitial}
-        </div>
-      )}
-    </>
-  );
-};
-
-// --- Helper: Format Date ---
-const formatDateOnly = (dateString: string): string => {
+// Helper to format Date
+const formatDate = (dateString: string): string => {
   try {
-    return new Date(dateString).toLocaleDateString("en-IN", {
+    return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -66,119 +24,83 @@ const formatDateOnly = (dateString: string): string => {
   }
 };
 
-// --- Status Badge Component ---
-const DriverStatusBadge = ({ status }: { status: DriverStatus }) => {
-  let badgeClass = "badge bg-secondary-subtle text-secondary"; // Default: Inactive
-  let iconClass = "fas fa-times-circle me-1"; // Default: Inactive icon
-
-  switch (status) {
-    case "Active":
-      badgeClass = "badge bg-success-subtle text-success";
-      iconClass = "fas fa-check-circle me-1";
-      break;
-    case "On Delivery":
-      badgeClass = "badge bg-primary-subtle text-primary";
-      iconClass = "fas fa-truck me-1";
-      break;
-    case "Inactive":
-      // Default already set
-      break;
-  }
-
-  return (
-    <span className={badgeClass}>
-      <i className={iconClass}></i> {status}
-    </span>
-  );
-};
-
-// --- Props Interface ---
-interface DriverTableProps {
-  drivers: IDriverFE[];
-  isLoading: boolean;
-}
-
-// --- The Table Component ---
-const DriverTable: React.FC<DriverTableProps> = ({ drivers, isLoading }) => {
+const DriverTable: React.FC<DriverTableProps> = ({
+  drivers,
+  isLoading,
+  isActionLoading,
+  onEdit,
+  onDelete,
+}) => {
   return (
     <div className="table-responsive">
-      <table className="table table-hover mb-0">
+      <table className="table mb-0 table-striped table-hover">
+        {/* Added table-hover */}
         <thead className="">
           <tr>
-            <th>Driver</th>
-            <th>Contact</th>
-            <th>Vehicle</th>
-            <th>Zone</th>
+            {/* Adjust columns as needed */}
+            <th>Full Name</th>
+            <th>Phone</th>
+            <th>Vehicle No</th>
             <th>Status</th>
-            <th>Joined Date</th>
-            <th className="text-end">Actions</th>
+            <th>Registered On</th>
+            <th className="text-end">Action</th>
           </tr>
         </thead>
         <tbody>
           {isLoading && (
             <tr>
-              <td colSpan={7} className="text-center py-4 text-muted">
+              <td colSpan={6} className="text-center py-4 text-muted">
+                {/* Updated colSpan */}
                 Loading drivers...
               </td>
             </tr>
           )}
           {!isLoading && drivers.length === 0 && (
             <tr>
-              <td colSpan={7} className="text-center py-4 text-muted">
-                No drivers found.
+              <td colSpan={6} className="text-center py-4 text-muted">
+                {/* Updated colSpan */}
+                No drivers found. Add one!
               </td>
             </tr>
           )}
           {!isLoading &&
             drivers.map((driver) => (
               <tr key={driver._id} style={{ verticalAlign: "middle" }}>
-                {/* Driver Column (Avatar + Name) */}
-                <td>
-                  <div className="d-flex align-items-center">
-                    <DriverAvatar
-                      src={driver.avatarUrl}
-                      name={driver.name}
-                      className="me-2"
-                    />
-                    <span className="fw-medium">{driver.name}</span>
-                  </div>
-                </td>
-                {/* Contact Column */}
+                <td>{driver.fullName}</td>
                 <td>{driver.phone}</td>
-                {/* Vehicle Column */}
+                <td>{driver.vehicleNumber}</td>
                 <td>
-                  <div>{driver.vehicleType}</div>
-                  <div className="text-muted fs-sm">{driver.vehicleNumber}</div>
+                  <span
+                    className={`badge ${
+                      driver.status === "Active"
+                        ? "bg-success-light text-success"
+                        : "bg-danger-light text-danger"
+                    }`}
+                  >
+                    {driver.status}
+                  </span>
                 </td>
-                {/* Zone Column */}
-                <td>
-                  {driver.assignedZone || (
-                    <span className="text-muted">N/A</span>
-                  )}
-                </td>
-                {/* Status Column */}
-                <td>
-                  <DriverStatusBadge status={driver.status} />
-                </td>
-                {/* Joined Date Column */}
-                <td>{formatDateOnly(driver.joinDate)}</td>
-                {/* Action Buttons (Placeholders) */}
+                <td>{formatDate(driver.createdAt)}</td>
                 <td className="text-end">
                   <button
                     title="Edit Driver"
-                    className="btn btn-sm btn-link p-0 me-2"
-                    disabled={true}
-                    style={{ color: "inherit" }}
+                    className="btn btn-sm btn-link p-0 me-2" // Using link style for icons
+                    onClick={() => onEdit(driver)}
+                    disabled={isActionLoading}
+                    style={{ color: "inherit" }} // Use default text color
                   >
                     <i className="las la-pen text-secondary fs-18"></i>
+                    {/* Line Awesome icon */}
                   </button>
                   <button
-                    title="View Details"
+                    title="Delete Driver"
                     className="btn btn-sm btn-link p-0"
-                    disabled={true}
+                    onClick={() => onDelete(driver._id)}
+                    disabled={isActionLoading}
                     style={{ color: "inherit" }}
                   >
-                    <i className="las la-eye text-secondary fs-18"></i>
+                    <i className="las la-trash-alt text-secondary fs-18"></i>
+                    {/* Line Awesome icon */}
                   </button>
                 </td>
               </tr>

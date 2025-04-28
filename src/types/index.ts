@@ -242,3 +242,38 @@ export interface IAdminGetActiveOrdersResponse {
   count: number;
   data: IAdminOrderFE[];
 }
+
+// Interface for Driver data returned by the API (password excluded)
+export interface IDriverFE {
+  _id: string;
+  fullName: string;
+  phone: string;
+  vehicleNumber: string;
+  status: DriverStatus;
+  createdAt: string; // Dates from JSON are strings
+  updatedAt: string;
+  // Add other fields if returned by API and needed by frontend
+}
+
+// Interface for the data required by the Add/Edit Driver form
+export interface IDriverFormData {
+  fullName: string;
+  phone: string;
+  vehicleNumber: string;
+  password?: string; // Password is required on create, optional on update
+  status: "Active" | "Inactive";
+}
+
+// Interfaces for API responses (optional but good practice)
+export interface IDriverApiResponse {
+  success: boolean;
+  message: string;
+  data: IDriverFE | null;
+}
+
+export interface IGetAllDriversApiResponse {
+  success: boolean;
+  message: string;
+  count?: number; // Include count if backend provides it
+  data: IDriverFE[];
+}

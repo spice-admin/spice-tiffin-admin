@@ -96,7 +96,7 @@ const TodaysOrdersTable: React.FC = () => {
                       <th className="border-top-0">Contact</th>
                       <th className="border-top-0">Package</th>
                       <th className="border-top-0">End Date</th>
-                      <th className="border-top-0">Address</th>
+
                       <th className="border-top-0">Status</th>
                       <th className="border-top-0 text-end">Actions</th>
                     </tr>
@@ -154,12 +154,7 @@ const TodaysOrdersTable: React.FC = () => {
                           {/* --- End Date --- */}
                           {formatDate(order.endDate)}
                         </td>
-                        <td>
-                          {/* --- Address --- */}
-                          <span className="text-truncate">
-                            {formatAddress(order.deliveryAddress)}
-                          </span>
-                        </td>
+
                         <td>
                           {/* --- Status Badge --- */}
                           <span

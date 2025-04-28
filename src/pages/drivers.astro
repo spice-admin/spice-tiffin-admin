@@ -1,11 +1,11 @@
 ---
 // src/pages/drivers.astro
-import Layout from "../layouts/Layout.astro";
-import ProtectDashboard from "../components/auth/ProtectDashboard";
-import Leftbar from "../components/dashboard/Leftbar.astro";
-import Topbar from "../components/dashboard/Topbar.astro";
-import PageTitle from "../components/dashboard/PageTitle.astro";
-import DriverManagerWrapper from "../components/management/DriverManagerWrapper"; // Import the new React wrapper
+import Layout from "../layouts/Layout.astro"; // Adjust path
+import ProtectDashboard from "../components/auth/ProtectDashboard"; // Adjust path
+import Leftbar from "../components/dashboard/Leftbar.astro"; // Adjust path
+import Topbar from "../components/dashboard/Topbar.astro"; // Adjust path
+import PageTitle from "../components/dashboard/PageTitle.astro"; // Adjust path
+import DriverManagerWrapper from "../components/management/DriverManagerWrapper"; // Adjust path
 
 const pageTitle = "Drivers";
 ---
@@ -25,7 +25,7 @@ const pageTitle = "Drivers";
       <div class="container-fluid">
         <div class="row">
           <div class="col-lg-12">
-            {/* Render the React component for drivers */}
+            {/* React component handles card, table, modal */}
             <DriverManagerWrapper client:load />
           </div>
         </div>
@@ -39,10 +39,12 @@ const pageTitle = "Drivers";
               <div class="card mb-0 border-0 rounded-bottom-0">
                 <div class="card-body">
                   <p class="text-muted mb-0">
-                    © {new Date().getFullYear()}
-                    Your Company Name {/* TODO: Update Company Name */}
+                    © {new Date().getFullYear()} Your Company Name {
+                      /* TODO: Update */
+                    }
                     <span class="float-end d-none d-sm-inline-block">
                       Design by <strong>IGNITAX</strong>
+                      {/* Optional */}
                     </span>
                   </p>
                 </div>
