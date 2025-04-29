@@ -3,9 +3,7 @@
 import type { ApiResponse, IDriverFE, IDriverFormData } from "../types"; // Adjust path
 
 // Constants
-const API_BASE_URL =
-  import.meta.env.PUBLIC_API_BASE_URL ||
-  "https://spice-tiffin-backend-production.up.railway.app/api/v1"; // Use Admin's env var
+const API_BASE_URL = import.meta.env.PUBLIC_API_BASE_URL; // Use Admin's env var
 const DRIVER_ENDPOINT = `${API_BASE_URL}/drivers`; // Endpoint for drivers
 const AUTH_TOKEN_KEY = "token"; // Ensure this matches the key used in LoginForm
 

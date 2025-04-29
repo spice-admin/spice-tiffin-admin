@@ -2,9 +2,7 @@
 import type { ApiResponse, ICityAdminFE, ICityFormData } from "../types";
 
 // Constants
-const API_BASE_URL =
-  import.meta.env.PUBLIC_API_BASE_URL ||
-  "https://spice-tiffin-backend-production.up.railway.app/api/v1";
+const API_BASE_URL = import.meta.env.PUBLIC_API_BASE_URL;
 const CITY_ENDPOINT = `${API_BASE_URL}/cities`; // Use the correct base path
 const AUTH_TOKEN_KEY = "token"; // Use the key where admin token is stored
 

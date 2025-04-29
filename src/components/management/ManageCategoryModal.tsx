@@ -6,6 +6,8 @@ interface Props {
   onCategoryAdded: () => void;
 }
 
+const API_BASE_URL = import.meta.env.PUBLIC_API_BASE_URL;
+
 const ManageCategoryModal: React.FC<Props> = ({ onCategoryAdded }) => {
   const [name, setName] = useState("");
 
@@ -28,7 +30,7 @@ const ManageCategoryModal: React.FC<Props> = ({ onCategoryAdded }) => {
     }
 
     try {
-      const res = await fetch("http://localhost:5000/api/v1/categories", {
+      const res = await fetch(`${API_BASE_URL}/categories`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: name.trim() }),

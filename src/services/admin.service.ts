@@ -8,9 +8,7 @@ import type {
   IDriverFE,
 } from "../types"; // Import the response type
 
-const API_BASE_URL =
-  import.meta.env.PUBLIC_API_BASE_URL ||
-  "https://spice-tiffin-backend-production.up.railway.app/api/v1"; // Use Admin's env var
+const API_BASE_URL = import.meta.env.PUBLIC_API_BASE_URL;
 const ADMIN_ENDPOINT_BASE = `${API_BASE_URL}/admin`;
 const ASSIGNMENT_ENDPOINT = `${ADMIN_ENDPOINT_BASE}/assignments`;
 const ROUTE_ENDPOINT = `${ADMIN_ENDPOINT_BASE}/routes`;

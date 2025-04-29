@@ -34,6 +34,7 @@ export const menu = [
     items: [
       { title: "Customers", href: "/customers", icon: Users },
       { title: "Plans", href: "/package-management", icon: FileText },
+      { title: "Addons", href: "/addons", icon: FileText },
       { title: "Categories", href: "/management/categories", icon: Layers3 },
       { title: "Payments", href: "/payments", icon: CreditCard },
 

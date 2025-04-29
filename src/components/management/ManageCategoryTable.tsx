@@ -12,6 +12,8 @@ interface Props {
   onEditClick: (category: Category) => void;
 }
 
+const API_BASE_URL = import.meta.env.PUBLIC_API_BASE_URL;
+
 const ManageCategoryTable: React.FC<Props> = ({
   categories,
   onRefresh,
@@ -29,10 +31,9 @@ const ManageCategoryTable: React.FC<Props> = ({
 
     if (confirm.isConfirmed) {
       try {
-        const res = await fetch(
-          `http://localhost:5000/api/v1/categories/${category._id}`,
-          { method: "DELETE" }
-        );
+        const res = await fetch(`${API_BASE_URL}/categories`, {
+          method: "DELETE",
+        });
         const data = await res.json();
 
         if (res.ok) {
