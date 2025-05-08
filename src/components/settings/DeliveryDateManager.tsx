@@ -40,6 +40,8 @@ type ModifiedDatesState = Record<string, ModifiedDateInfo>;
 // --- API Configuration ---
 const BACKEND_API_ROOT = import.meta.env.PUBLIC_API_BASE_URL;
 const OPERATIONAL_DATES_API_ENDPOINT = `${BACKEND_API_ROOT}/operational-dates`;
+const AUTH_TOKEN_KEY =
+  "10d5f16c933115cbd21e960604668d07356a6f0ec6354bd285527566369bfe89";
 
 // Ensure the root URL is defined
 if (!BACKEND_API_ROOT) {
@@ -47,6 +49,13 @@ if (!BACKEND_API_ROOT) {
     "FATAL ERROR: PUBLIC_API_BASE_URL is not defined in environment variables. Frontend won't be able to connect to the backend."
   );
   // You might want to throw an error or display a more user-friendly message
+}
+
+function getAuthAdminToken(): string | null {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem(AUTH_TOKEN_KEY);
+  }
+  return null;
 }
 
 const DeliveryDateManager: React.FC = () => {
@@ -70,10 +79,15 @@ const DeliveryDateManager: React.FC = () => {
         setIsLoading(false);
         return;
       }
+      const token = getAuthAdminToken();
+      if (!token) {
+        setError("Admin authentication token not found. Please log in.");
+        setIsLoading(false);
+        return;
+      }
       setIsLoading(true);
       setError(null);
       try {
-        // Use the fully constructed endpoint
         const response = await axios.get<{
           success: boolean;
           data: OperationalDateDB[];
@@ -82,7 +96,12 @@ const DeliveryDateManager: React.FC = () => {
             startDate: format(startDate, "yyyy-MM-dd"),
             endDate: format(endDate, "yyyy-MM-dd"),
           },
-          withCredentials: true,
+          headers: {
+            // <-- ADD THIS
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json", // Good practice, though GET might not strictly need it
+          },
+          withCredentials: true, // Keep this for now, we'll address CORS for it next
         });
         if (response.data.success) {
           const newFetchedDates: OperationalDatesState = {};
@@ -118,10 +137,14 @@ const DeliveryDateManager: React.FC = () => {
       setIsSaving(false);
       return;
     }
-
-    setIsSaving(true);
-    setError(null);
-    setSuccessMessage(null);
+    const token = getAuthAdminToken();
+    if (!token) {
+      setError(
+        "Admin authentication token not found. Please log in to save changes."
+      );
+      setIsSaving(false);
+      return;
+    }
 
     const payload = {
       dates: Object.entries(modifiedDates).map(([dateString, info]) => ({
@@ -129,15 +152,22 @@ const DeliveryDateManager: React.FC = () => {
         isDeliveryEnabled: info.isDeliveryEnabled,
       })),
     };
+    setIsSaving(true);
+    setError(null);
+    setSuccessMessage(null);
 
     try {
-      // Use the fully constructed endpoint for batch update
       const response = await axios.post<{
         success: boolean;
         message?: string;
         data: OperationalDateDB[];
       }>(`${OPERATIONAL_DATES_API_ENDPOINT}/batch`, payload, {
-        withCredentials: true,
+        headers: {
+          // <-- ADD THIS
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        withCredentials: true, // Keep this
       });
 
       if (response.data.success) {
