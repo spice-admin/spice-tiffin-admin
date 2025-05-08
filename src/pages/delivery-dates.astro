@@ -1,0 +1,180 @@
+---
+// src/pages/admin/settings/delivery-dates.astro
+// Ensure Layout, ProtectDashboard etc paths are correct for Admin Panel
+import Layout from "../layouts/Layout.astro"; // Adjust path
+import ProtectDashboard from "../components/auth/ProtectDashboard"; // Adjust path
+import Leftbar from "../components/dashboard/Leftbar.astro"; // Adjust path
+import Topbar from "../components/dashboard/Topbar.astro"; // Adjust path
+import PageTitle from "../components/dashboard/PageTitle.astro"; // Adjust path
+import DeliveryDateManager from "../components/settings/DeliveryDateManager.tsx"; // Adjust path
+
+const pageTitle = "Delivery Date Settings";
+---
+
+<Layout title={pageTitle}>
+  <ProtectDashboard client:only="react" />
+  <Topbar title={pageTitle} />
+  <Leftbar />
+  <PageTitle title={pageTitle} activePage="Delivery Dates" />
+
+  <div class="page-wrapper">
+    <div class="page-content">
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-lg-12">
+            {/* Render the React component */}
+            <DeliveryDateManager client:load />
+          </div>
+        </div>
+      </div>
+      {/* Footer */}
+      <footer class="footer text-center text-sm-start d-print-none">
+        <div class="container-fluid">
+          <div class="row">
+            <div class="col-12 px-0">
+              <div class="card mb-0 border-0 rounded-bottom-0">
+                <div class="card-body">
+                  <p class="text-muted mb-0">
+                    © {new Date().getFullYear()} SpiceBar Admin <span
+                      class="float-end d-none d-sm-inline-block"
+                      >Design by <strong>IGNITAX</strong></span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </div>
+</Layout>
+
+<style is:global>
+  /* Import react-calendar base styles */
+  @import "react-calendar/dist/Calendar.css";
+
+  /* Custom Calendar Tile Styles (Add to global.css or scope here) */
+  .calendar-wrapper {
+    max-width: 500px; /* Limit calendar width */
+    margin: 1.5rem auto; /* Center calendar */
+    background-color: #fff;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .react-calendar {
+    border: none; /* Override default border */
+    width: 100%; /* Make it fill wrapper */
+  }
+  .react-calendar__tile {
+    border-radius: 4px; /* Rounded corners for tiles */
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease;
+    height: 45px; /* Ensure square-ish tiles */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+  }
+  .react-calendar__month-view__days__day--neighboringMonth {
+    color: #d1d5db; /* Dim neighbouring month days */
+  }
+
+  /* Custom tile classes */
+  .calendar-tile {
+    /* Base class for all tiles */
+    border: 2px solid transparent; /* Base border */
+  }
+  .enabled-date {
+    background-color: #dcfce7 !important; /* Light green */
+    color: #166534 !important; /* Dark green text */
+  }
+  .disabled-date {
+    background-color: #f8f9fa !important; /* Light gray */
+    color: #6c757d !important; /* Muted text */
+  }
+  .enabled-date:hover,
+  .disabled-date:hover {
+    background-color: #e5e7eb !important; /* Gray hover */
+  }
+  .enabled-date.modified {
+    border-color: #2563eb !important; /* Blue border for modified */
+  }
+  .disabled-date.modified {
+    border-color: #2563eb !important; /* Blue border for modified */
+  }
+  .today-date {
+    /* Optional: style today differently */
+    font-weight: bold;
+    /* background-color: #e0f2fe !important; */ /* Light blue background */
+    /* color: #0c4a6e !important; */ /* Dark blue text */
+  }
+
+  /* Save button */
+  .save-button-container {
+    margin-top: 1.5rem;
+    text-align: center;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+  }
+  .save-button {
+    /* Use primary button styles */
+    padding: 0.7rem 1.75rem;
+    background-color: #0d6efd;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+      background-color 0.15s ease,
+      opacity 0.15s ease;
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .save-button:hover:not(:disabled) {
+    background-color: #0b5ed7;
+  }
+  .save-button:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+  .no-changes-note {
+    margin-left: 1rem;
+    font-size: 0.85rem;
+    color: #6c757d;
+    font-style: italic;
+  }
+
+  /* Loading/Error messages */
+  .loading-indicator,
+  .error-message,
+  .success-message {
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+  .loading-indicator {
+    background-color: #eef2ff;
+    color: #4338ca;
+  }
+  .error-message {
+    background-color: #fee2e2;
+    color: #991b1b;
+  }
+  .success-message {
+    background-color: #dcfce7;
+    color: #166534;
+  }
+
+  /* Ensure spinner styles are available if used */
+  .spinner {
+    /* ... spinner styles ... */
+  }
+</style>

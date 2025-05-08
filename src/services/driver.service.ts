@@ -7,6 +7,13 @@ const API_BASE_URL = import.meta.env.PUBLIC_API_BASE_URL; // Use Admin's env var
 const DRIVER_ENDPOINT = `${API_BASE_URL}/drivers`; // Endpoint for drivers
 const AUTH_TOKEN_KEY = "token"; // Ensure this matches the key used in LoginForm
 
+export interface IDriverBasicInfo {
+  _id: string;
+  fullName: string;
+  // Add status if needed for filtering/display in dropdown later
+  // status?: DriverStatus;
+}
+
 // Reusable response handler (copied from order.service.ts example)
 async function handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
   let data: ApiResponse<T>;
@@ -252,6 +259,76 @@ export const deleteDriver = async (id: string): Promise<ApiResponse<null>> => {
     return {
       success: false,
       message: (error as Error).message || `Failed to delete driver ${id}.`,
+    };
+  }
+};
+
+/**
+ * Fetches a list of drivers specifically for dropdowns/assignments.
+ * Returns only basic info (_id, fullName).
+ * @returns Promise<ApiResponse<IDriverBasicInfo[]>>
+ */
+export const getDriversListApi = async (): Promise<
+  ApiResponse<IDriverBasicInfo[]>
+> => {
+  const token = getAuthToken();
+  if (!token) {
+    return {
+      success: false,
+      message: "Admin authentication required.",
+      data: [],
+    };
+  }
+
+  try {
+    console.log("[DriverService Fetch] Fetching drivers list for dropdown...");
+    // Use the same endpoint as getAllDrivers unless backend has a specific light endpoint
+    const response = await fetch(`${DRIVER_ENDPOINT}/`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    // Process response expecting full driver data initially
+    const result = await handleResponse<IDriverFE[]>(response);
+
+    let basicInfoList: IDriverBasicInfo[] = [];
+
+    // If successful and data exists, map it to the basic info format
+    if (result.success && Array.isArray(result.data)) {
+      basicInfoList = result.data.map((driver) => ({
+        _id: driver._id,
+        fullName: driver.fullName,
+        // status: driver.status // Include status if needed
+      }));
+      console.log(
+        `[DriverService Fetch] Mapped ${basicInfoList.length} drivers to basic info.`
+      );
+    } else {
+      // Log warning if success was false but handleResponse didn't throw
+      if (!result.success) {
+        console.warn(
+          `[DriverService Fetch] Fetch drivers list failed with message: ${result.message}`
+        );
+      }
+    }
+
+    // Return the processed response, replacing original data with mapped data
+    return {
+      success: result.success,
+      message:
+        result.message || (result.success ? "Drivers list fetched." : "Failed"),
+      data: basicInfoList, // Return the mapped array
+      count: result.count, // Pass count through if available
+    };
+  } catch (error) {
+    console.error("[DriverService Fetch] Get Drivers List API failed:", error);
+    return {
+      success: false,
+      message: (error as Error).message || "Failed to fetch drivers list.",
+      data: [], // Return empty array on error
     };
   }
 };

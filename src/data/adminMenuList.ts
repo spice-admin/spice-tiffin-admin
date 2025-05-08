@@ -47,6 +47,7 @@ export const menu = [
     items: [
       { title: "Orders", href: "/orders", icon: ClipboardList },
       { title: "Drivers", href: "/drivers", icon: Truck },
+      { title: "Delivery Dates", href: "/delivery-dates", icon: CalendarDays },
       { title: "Routes", href: "/delivery-management", icon: Truck },
       { title: "Cities", href: "/cities", icon: Building2 },
     ],

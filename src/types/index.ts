@@ -4,11 +4,16 @@
 export interface ApiResponse<T> {
   success: boolean;
   message: string;
-  data?: T;
-  count?: number; // Added count for lists
-  total?: number; // Added total for pagination later
-  error?: any;
-  errors?: any;
+  data?: T; // Specific data payload
+  count?: number; // Count for current page list
+  total?: number; // Total items for pagination
+  pagination?: IPaginationData; // Nested pagination data
+  errors?: any; // For validation errors (e.g., Zod)
+  error?: any; // For general errors
+  // Specific flags/tokens used by certain auth responses
+  verificationRequired?: boolean;
+  token?: string; // Login JWT
+  resetToken?: string; // Password reset token
 }
 
 // Corresponds to PackageType enum on the backend
@@ -49,14 +54,21 @@ export interface IPackageFormData {
   image?: string;
 }
 
-// --- Backend API Response Structure ---
-// Assuming your controllers return data in this format
+export interface CartItem {
+  addonId: string;
+  name: string;
+  price: number; // Price per unit (dollars)
+  image: string;
+  quantity: number;
+}
 
-export interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data?: T;
-  error?: any; // Adjust based on actual error structure
+export interface IAddonFE {
+  _id: string;
+  name: string;
+  price: number; // Assume dollars for FE display consistency
+  image: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Define a type for customer data
@@ -135,10 +147,58 @@ export interface IDeliveryAddressFE {
   city?: string | null;
   postalCode?: string | null;
   currentLocation?: string | null;
-  // --- ADD THESE LINES ---
-  latitude?: number | null; // Add latitude (make optional/nullable if geocoding might fail)
-  longitude?: number | null; // Add longitude (make optional/nullable if geocoding might fail)
-  // -----------------------
+  latitude?: number | null;
+  longitude?: number | null;
+}
+
+export interface IPaymentDetailsFE {
+  // Shape of payment subdocument
+  stripePaymentIntentId: string;
+  stripeCustomerId: string;
+  amountPaid: number; // In cents
+  currency: string;
+  paymentMethodType?: string | null;
+  cardBrand?: string | null;
+  cardLast4?: string | null;
+  paymentDate?: string; // Changed to optional string to match FE data flow
+}
+
+export interface IOrderBaseFE {
+  _id: string;
+  orderNumber: string;
+  packageName: string; // Denormalized name
+  packagePrice: number; // Denormalized price (dollars)
+  deliveryDays: number; // Denormalized duration/count
+  startDate: string; // ISO Date string
+  endDate: string; // ISO Date string
+  status: OrderStatus; // Use the OrderStatus enum
+  deliverySchedule?: string[]; // Array of ISO Date strings (optional if not always fetched)
+  deliveryAddress: IDeliveryAddressFE;
+  paymentDetails: IPaymentDetailsFE; // Use the defined interface
+  deliveryStatus: DeliveryStatusFE; // Use the DeliveryStatus enum
+  deliverySequence?: number | null;
+  proofOfDeliveryUrl?: string | null;
+  createdAt: string; // ISO Date string
+  updatedAt: string; // ISO Date string
+}
+
+export interface IOrderCustomerFE extends IOrderBaseFE {
+  // Include populated package/customer stubs if needed, or keep simple
+  package?: IOrderPackageInfo | null; // Example if populated
+  // Exclude fields not relevant to customer view if necessary
+}
+
+export interface IDriverBasicInfo {
+  _id: string;
+  fullName: string;
+}
+
+// Shape of populated assigned driver data in Admin Order list
+export interface IAdminOrderDriverPopulated {
+  _id: string;
+  fullName: string;
+  phone?: string; // Optional based on population
+  status?: DriverStatus; // Optional based on population
 }
 
 export enum DeliveryStatusFE {
@@ -293,4 +353,36 @@ export interface IGetAllDriversApiResponse {
   message: string;
   count?: number; // Include count if backend provides it
   data: IDriverFE[];
+}
+
+export interface IOrderFilters {
+  status?: OrderStatus | "" | null; // Use the OrderStatus enum
+  search?: string | null;
+  // startDate?: string | null;
+  // endDate?: string | null;
+}
+
+export interface IPaginationData {
+  totalOrders: number;
+  totalPages: number;
+  currentPage: number;
+  limit?: number;
+  hasNextPage?: boolean;
+  hasPrevPage?: boolean;
+}
+
+// Structure for the Admin Get All Orders API response payload (inside ApiResponse.data)
+export interface IAdminOrdersResponse {
+  orders: IOrderAdminFE[];
+  pagination: IPaginationData;
+}
+
+export interface IDeliveryDateSettingFE {
+  date: string; // ISO Date string (e.g., "2025-05-15T00:00:00.000Z" or "2025-05-15")
+  isEnabled: boolean; // Status set by admin
+  notes?: string; // Optional notes from admin
+  // Add _id, createdAt, updatedAt if your API returns them and you need them
+  // _id?: string;
+  // createdAt?: string;
+  // updatedAt?: string;
 }
