@@ -40,8 +40,7 @@ type ModifiedDatesState = Record<string, ModifiedDateInfo>;
 // --- API Configuration ---
 const BACKEND_API_ROOT = import.meta.env.PUBLIC_API_BASE_URL;
 const OPERATIONAL_DATES_API_ENDPOINT = `${BACKEND_API_ROOT}/operational-dates`;
-const AUTH_TOKEN_KEY =
-  "10d5f16c933115cbd21e960604668d07356a6f0ec6354bd285527566369bfe89";
+const AUTH_TOKEN_KEY = "token";
 
 // Ensure the root URL is defined
 if (!BACKEND_API_ROOT) {
@@ -101,7 +100,7 @@ const DeliveryDateManager: React.FC = () => {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json", // Good practice, though GET might not strictly need it
           },
-          withCredentials: true, // Keep this for now, we'll address CORS for it next
+          //withCredentials: true, // Keep this for now, we'll address CORS for it next
         });
         if (response.data.success) {
           const newFetchedDates: OperationalDatesState = {};
@@ -167,7 +166,7 @@ const DeliveryDateManager: React.FC = () => {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        withCredentials: true, // Keep this
+        //withCredentials: true, // Keep this
       });
 
       if (response.data.success) {

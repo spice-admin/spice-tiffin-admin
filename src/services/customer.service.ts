@@ -5,8 +5,7 @@ import type { ApiResponse, ICustomerAdminFE } from "../types"; // Import relevan
 const API_BASE_URL = import.meta.env.PUBLIC_API_BASE_URL;
 // Use the correct endpoint based on your backend routes
 const ADMIN_ENDPOINT = `${API_BASE_URL}/admin`;
-const AUTH_TOKEN_KEY =
-  "10d5f16c933115cbd21e960604668d07356a6f0ec6354bd285527566369bfe89"; // Use the key where admin token is stored
+const AUTH_TOKEN_KEY = "token"; // Use the key where admin token is stored
 
 // Reusable response handler (Copy or import from shared utils)
 async function handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
