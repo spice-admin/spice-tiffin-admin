@@ -18,29 +18,46 @@ export interface ApiResponse<T> {
 
 // Corresponds to PackageType enum on the backend
 export enum PackageType {
-  TRIAL = "trial",
+  DAILY = "daily",
   WEEKLY = "weekly",
   MONTHLY = "monthly",
+  CUSTOM = "custom",
 }
 
 // Simplified Category interface for frontend use
-export interface ICategoryFE {
-  _id: string;
+export interface CategoryBasic {
+  // Renamed to avoid conflict if ICategoryFE is very different
+  id: string; // Changed from _id
   name: string;
+  // created_at, updated_at could also be here if needed
 }
 
-// Frontend representation of the Package data
-export interface IPackageFE {
-  _id: string; // Use _id from MongoDB
+export interface Package {
+  id: string;
   name: string;
-  description?: string;
+  description?: string | null;
   price: number;
-  type: PackageType;
+  type: PackageType; // This will be one of the string values from the enum
   days: number;
-  category: ICategoryFE; // Use the populated category object
-  image?: string;
-  createdAt: string; // Dates are often strings after JSON serialization
-  updatedAt: string;
+  category_id: string; // The UUID of the category
+  image_url?: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  categories?: CategoryBasic | null; // For the joined category data: { id, name }
+}
+
+// For the package form in the modal
+// This will replace/align with your IPackageFormData
+export interface PackageFormData {
+  name: string;
+  description: string; // Changed from optional for form handling
+  price: number | ""; // Allow empty string for input control
+  type: PackageType;
+  days: number | ""; // Allow empty string for input control
+  category: string; // Will store category_id (UUID string)
+  image_url: string; // Changed from optional for form handling (can be empty string)
+  is_active: boolean;
 }
 
 // For creating/updating packages, category will be just the ID

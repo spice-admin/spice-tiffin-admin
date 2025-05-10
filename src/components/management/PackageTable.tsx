@@ -1,22 +1,13 @@
-// src/components/management/PackageTable.tsx
 import React from "react";
-import type { IPackageFE } from "../../types";
-import PackageImage from "./PackageImage"; // Import the new component
+import type { Package } from "../../types"; // Adjust path
+import PackageImage from "./PackageImage"; // Adjust path
+import { HiOutlinePencilSquare, HiOutlineTrash } from "react-icons/hi2"; // Example icons
 
-// --- Props Interface ---
-interface PackageTableProps {
-  packages: IPackageFE[];
-  isLoading: boolean;
-  isActionLoading: boolean;
-  onEdit: (pkg: IPackageFE) => void;
-  onDelete: (id: string) => void;
-}
-
-// --- Helper: Format Date --- (Keep this function)
-const formatDate = (dateString: string): string => {
-  // ... (implementation from previous step) ...
+const formatDate = (dateString?: string | null): string => {
+  if (!dateString) return "N/A";
   try {
-    return new Date(dateString).toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleDateString("en-CA", {
+      // Using en-CA for YYYY-MM-DD like format
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -25,6 +16,14 @@ const formatDate = (dateString: string): string => {
     return "Invalid Date";
   }
 };
+
+interface PackageTableProps {
+  packages: Package[];
+  isLoading: boolean;
+  isActionLoading: boolean;
+  onEdit: (pkg: Package) => void;
+  onDelete: (id: string, name: string) => void; // Added name for confirm dialog
+}
 
 const PackageTable: React.FC<PackageTableProps> = ({
   packages,
@@ -35,8 +34,8 @@ const PackageTable: React.FC<PackageTableProps> = ({
 }) => {
   return (
     <div className="table-responsive">
-      <table className="table mb-0">
-        <thead className="">
+      <table className="table table-hover mb-0">
+        <thead>
           <tr>
             <th>Image</th>
             <th>Name</th>
@@ -44,6 +43,7 @@ const PackageTable: React.FC<PackageTableProps> = ({
             <th>Type</th>
             <th>Days</th>
             <th>Price</th>
+            <th>Active</th>
             <th>Created</th>
             <th className="text-end">Action</th>
           </tr>
@@ -51,52 +51,61 @@ const PackageTable: React.FC<PackageTableProps> = ({
         <tbody>
           {isLoading && (
             <tr>
-              <td colSpan={8} className="text-center py-4 text-muted">
+              <td colSpan={9} className="text-center py-4 text-muted">
                 Loading packages...
               </td>
             </tr>
           )}
           {!isLoading && packages.length === 0 && (
             <tr>
-              <td colSpan={8} className="text-center py-4 text-muted">
+              <td colSpan={9} className="text-center py-4 text-muted">
                 No packages found. Add one!
               </td>
             </tr>
           )}
           {!isLoading &&
             packages.map((pkg) => (
-              <tr key={pkg._id} style={{ verticalAlign: "middle" }}>
-                {/* Use the PackageImage component */}
+              <tr key={pkg.id} style={{ verticalAlign: "middle" }}>
                 <td>
                   <PackageImage
-                    src={pkg.image}
+                    src={pkg.image_url}
                     alt={pkg.name}
-                    className="rounded-circle" // Pass Bootstrap class
-                  />
+                    className="rounded"
+                  />{" "}
+                  {/* Example: rounded class */}
                 </td>
-                {/* Name / Description Column */}
                 <td>
                   <p className="d-inline-block align-middle mb-0">
                     <span className="d-block align-middle mb-0 product-name text-body">
                       {pkg.name}
                     </span>
                     {pkg.description && (
-                      <span className="text-muted font-13">
+                      <span className="text-muted font-13 d-block">
                         {pkg.description}
                       </span>
                     )}
                   </p>
                 </td>
                 <td>
-                  {pkg.category?.name || (
+                  {pkg.categories?.name || (
                     <span className="text-muted">N/A</span>
                   )}
                 </td>
                 <td className="text-capitalize">{pkg.type}</td>
                 <td>{pkg.days}</td>
                 <td>${pkg.price.toFixed(2)}</td>
-                <td>{formatDate(pkg.createdAt)}</td>
-                {/* Action Buttons */}
+                <td>
+                  <span
+                    className={`badge bg-${
+                      pkg.is_active ? "success" : "danger"
+                    }-subtle text-${
+                      pkg.is_active ? "success" : "danger"
+                    } border border-${pkg.is_active ? "success" : "danger"}`}
+                  >
+                    {pkg.is_active ? "Active" : "Inactive"}
+                  </span>
+                </td>
+                <td>{formatDate(pkg.created_at)}</td>
                 <td className="text-end">
                   <button
                     title="Edit Package"
@@ -105,16 +114,19 @@ const PackageTable: React.FC<PackageTableProps> = ({
                     disabled={isActionLoading}
                     style={{ color: "inherit" }}
                   >
-                    <i className="las la-pen text-secondary fs-18"></i>
+                    <HiOutlinePencilSquare
+                      size={18}
+                      className="text-secondary"
+                    />
                   </button>
                   <button
                     title="Delete Package"
                     className="btn btn-sm btn-link p-0"
-                    onClick={() => onDelete(pkg._id)}
+                    onClick={() => onDelete(pkg.id, pkg.name)}
                     disabled={isActionLoading}
                     style={{ color: "inherit" }}
                   >
-                    <i className="las la-trash-alt text-secondary fs-18"></i>
+                    <HiOutlineTrash size={18} className="text-danger" />
                   </button>
                 </td>
               </tr>

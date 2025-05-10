@@ -1,216 +1,219 @@
-// src/components/management/PackageManagerWrapper.tsx
 import React, { useState, useEffect, useCallback } from "react";
-import type { IPackageFE, IPackageFormData } from "../../types";
-import * as packageService from "../../services/packageService";
-import PackageTable from "./PackageTable"; // The refactored table component
-import ManagePackageModal from "./ManagePackageModal"; // The modal component
-// Assuming Font Awesome/Line Awesome are globally included via your layout's CSS
-// Otherwise, you might need react-icon imports if configured differently.
+import { supabase } from "../../lib/supabaseClient"; // Adjust path
+import type { Package, PackageFormData, CategoryBasic } from "../../types"; // Adjust path
+import PackageTable from "./PackageTable";
+import ManagePackageModal from "./ManagePackageModal";
+import Swal from "sweetalert2"; // Assuming you have SweetAlert2 installed
 
 const PackageManagerWrapper: React.FC = () => {
-  const [packages, setPackages] = useState<IPackageFE[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true); // Start loading initially
-  const [error, setError] = useState<string | null>(null);
-  const [notification, setNotification] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
+  const [packages, setPackages] = useState<Package[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isActionLoading, setIsActionLoading] = useState<boolean>(false); // For add/edit/delete actions
+  const [error, setError] = useState<string | null>(null); // General error for the wrapper/table
 
-  // Modal State
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [editingPackage, setEditingPackage] = useState<IPackageFE | null>(null); // null for Add, object for Edit
+  const [editingPackage, setEditingPackage] = useState<Package | null>(null);
 
-  // --- Data Fetching ---
   const fetchPackages = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await packageService.getAllPackages();
-      setPackages(data);
-    } catch (err) {
-      const message = (err as Error).message || "Failed to fetch packages";
+      const { data, error: fetchError } = await supabase
+        .from("packages")
+        .select(
+          `
+          *,
+          categories (id, name)
+        `
+        )
+        .order("name", { ascending: true });
+
+      if (fetchError) throw fetchError;
+      setPackages(data || []);
+    } catch (err: any) {
+      const message = err.message || "Failed to fetch packages";
       setError(message);
-      showNotification("error", message);
-      setPackages([]); // Clear packages on error
+      setPackages([]);
     } finally {
       setIsLoading(false);
     }
-  }, []); // Empty dependency array, fetch once on mount
+  }, []);
 
   useEffect(() => {
     fetchPackages();
   }, [fetchPackages]);
 
-  // --- Notification Handling ---
-  useEffect(() => {
-    if (notification) {
-      const timer = setTimeout(() => setNotification(null), 5000); // Auto-hide after 5s
-      return () => clearTimeout(timer);
-    }
-  }, [notification]);
-
-  const showNotification = (type: "success" | "error", message: string) => {
-    // Simple implementation - replace with a proper toast library if available
-    setNotification({ type, message });
-    console.log(`Notification (${type}): ${message}`); // Log for debugging
-  };
-
-  // --- Modal Handling ---
   const openAddModal = () => {
-    setEditingPackage(null); // Ensure it's in 'Add' mode
+    setEditingPackage(null);
     setIsModalOpen(true);
   };
 
-  const openEditModal = (pkg: IPackageFE) => {
-    setEditingPackage(pkg); // Set the package to edit
+  const openEditModal = (pkg: Package) => {
+    setEditingPackage(pkg);
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
-    setEditingPackage(null); // Clear editing state when closing
+    setEditingPackage(null);
   };
 
-  // --- CRUD Handlers ---
-  const handleFormSubmit = async (formData: IPackageFormData) => {
-    setIsLoading(true); // Indicate loading state for the operation
-    setError(null);
-    let result;
+  const handleFormSubmit = async (
+    formData: PackageFormData,
+    packageId?: string
+  ) => {
+    setIsActionLoading(true);
+    // setError(null); // Error state is handled in modal or set below if general
+
+    const packagePayload = {
+      name: formData.name,
+      description: formData.description || null,
+      price: Number(formData.price),
+      type: formData.type,
+      days: Number(formData.days),
+      category_id: formData.category,
+      image_url: formData.image_url || null,
+      is_active: formData.is_active,
+    };
+
     try {
-      if (editingPackage) {
-        // Update existing package
-        result = await packageService.updatePackage(
-          editingPackage._id,
-          formData
-        );
-        if (result.success && result.data) {
-          setPackages(
-            packages.map((p) =>
-              p._id === editingPackage._id ? result.data! : p
-            )
-          );
-          showNotification(
-            "success",
-            result.message || "Package updated successfully!"
-          );
-        } else {
-          throw new Error(result.message || "Failed to update package");
-        }
+      let supaError;
+      if (packageId) {
+        // Update
+        const { error } = await supabase
+          .from("packages")
+          .update(packagePayload)
+          .eq("id", packageId)
+          .select(); // Select to get the updated row, useful for optimistic updates or just confirmation
+        supaError = error;
       } else {
-        // Create new package
-        result = await packageService.createPackage(formData);
-        if (result.success && result.data) {
-          setPackages([...packages, result.data]);
-          showNotification(
-            "success",
-            result.message || "Package created successfully!"
-          );
-        } else {
-          throw new Error(result.message || "Failed to create package");
-        }
+        // Create
+        const { error } = await supabase
+          .from("packages")
+          .insert([packagePayload])
+          .select();
+        supaError = error;
       }
-      closeModal(); // Close modal on success
-    } catch (err) {
-      const message = (err as Error).message || "An error occurred";
-      setError(message); // Set potential error message for modal/form
-      showNotification("error", message);
-      // Keep modal open on error? Or close? User choice. Let's keep it open.
+
+      if (supaError) {
+        if (
+          supaError.code === "23505" &&
+          supaError.message.includes("packages_name_key")
+        ) {
+          // Check for unique name violation
+          throw new Error(`Package name "${formData.name}" already exists.`);
+        }
+        throw supaError;
+      }
+
+      Swal.fire(
+        "Success!",
+        `Package ${packageId ? "updated" : "created"} successfully!`,
+        "success"
+      );
+      closeModal();
+      await fetchPackages(); // Refetch
+    } catch (err: any) {
+      console.error(
+        `Error ${packageId ? "updating" : "creating"} package:`,
+        err
+      );
+      // This error will be re-thrown to the modal by its onSubmit logic if needed
+      // Or display a generic error message using Swal
+      Swal.fire(
+        "Error!",
+        err.message || `Failed to ${packageId ? "update" : "create"} package.`,
+        "error"
+      );
+      throw err; // Re-throw so modal's isSubmitting resets if it catches
     } finally {
-      setIsLoading(false);
+      setIsActionLoading(false);
     }
   };
 
-  const handleDeletePackage = async (id: string) => {
-    // Confirmation dialog
-    // Assuming standard browser confirm. Use a styled modal confirm if needed.
-    if (!window.confirm("Are you sure you want to delete this package?")) {
-      return;
-    }
+  const handleDeletePackage = async (id: string, name: string) => {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: `You are about to delete package: "${name}". This cannot be undone.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc3545",
+      cancelButtonColor: "#6c757d",
+      confirmButtonText: "Yes, delete it!",
+    });
 
-    setIsLoading(true);
-    setError(null);
+    if (!result.isConfirmed) return;
+
+    setIsActionLoading(true);
+    // setError(null);
     try {
-      const result = await packageService.deletePackage(id);
-      if (result.success) {
-        setPackages(packages.filter((p) => p._id !== id)); // Update state
-        showNotification(
-          "success",
-          result.message || "Package deleted successfully!"
-        );
-      } else {
-        throw new Error(result.message || "Failed to delete package");
-      }
-    } catch (err) {
-      const message = (err as Error).message || "Failed to delete package";
-      setError(message);
-      showNotification("error", message);
+      const { error: deleteError } = await supabase
+        .from("packages")
+        .delete()
+        .eq("id", id);
+
+      if (deleteError) throw deleteError;
+
+      Swal.fire("Deleted!", `Package "${name}" has been deleted.`, "success");
+      setPackages((prev) => prev.filter((p) => p.id !== id)); // Optimistic update
+      // await fetchPackages(); // Or refetch
+    } catch (err: any) {
+      console.error("Error deleting package:", err);
+      Swal.fire("Error!", err.message || "Failed to delete package.", "error");
+      // setError(message); // Set error for display above table if preferred
     } finally {
-      setIsLoading(false);
+      setIsActionLoading(false);
     }
   };
 
   return (
     <div className="card">
-      {" "}
-      {/* Use the class name from your HTML */}
       <div className="card-header">
         <div className="row align-items-center">
           <div className="col">
-            <h4 className="card-title">Packages</h4>
+            <h4 className="card-title">Manage Packages</h4>
           </div>
           <div className="col-auto">
             <button
               className="btn btn-sm btn-primary"
-              onClick={openAddModal} // Trigger React state change
-              disabled={isLoading}
+              onClick={openAddModal}
+              disabled={isLoading || isActionLoading}
             >
-              <i className="fas fa-plus me-1"></i>{" "}
-              {/* Font Awesome icon class */}
-              Add Package
+              <i className="fas fa-plus me-1"></i> Add Package
             </button>
           </div>
         </div>
       </div>
       <div className="card-body pt-0">
-        {/* Notification Area - Basic Implementation */}
-        {notification && (
-          <div
-            className={`alert ${
-              notification.type === "success" ? "alert-success" : "alert-danger"
-            } alert-dismissible fade show`}
-            role="alert"
-          >
-            {notification.message}
-            <button
-              type="button"
-              className="btn-close"
-              onClick={() => setNotification(null)}
-              aria-label="Close"
-            ></button>
-          </div>
-        )}
-        {/* Global Error Display (if not handled by notification) */}
-        {error && !notification && (
-          <div className="alert alert-danger" role="alert">
-            <strong>Error:</strong> {error}
-          </div>
-        )}
-
+        {error &&
+          !isModalOpen && ( // Display general error only if modal isn't open (modal handles its own)
+            <div className="alert alert-danger mt-2" role="alert">
+              <strong>Error:</strong> {error}
+              <button
+                onClick={() => {
+                  fetchPackages();
+                  setError(null);
+                }}
+                className="btn btn-sm btn-outline-danger ms-2 float-end"
+              >
+                Retry Fetch
+              </button>
+            </div>
+          )}
         <PackageTable
           packages={packages}
-          isLoading={isLoading && packages.length === 0} // Show loading only initially or if empty
+          isLoading={isLoading && packages.length === 0}
+          isActionLoading={isActionLoading}
           onEdit={openEditModal}
           onDelete={handleDeletePackage}
-          isActionLoading={isLoading} // Disable row actions during any operation
         />
       </div>
-      {/* Render the Modal */}
       <ManagePackageModal
         isOpen={isModalOpen}
         onClose={closeModal}
         onSubmit={handleFormSubmit}
-        initialData={editingPackage} // Pass package data for editing, null for adding
-        isLoading={isLoading} // Pass loading state to disable form during submission
+        initialData={editingPackage}
+        isSubmitting={isActionLoading} // Use isActionLoading for modal's submitting state
       />
     </div>
   );
