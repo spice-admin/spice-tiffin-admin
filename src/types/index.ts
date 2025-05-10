@@ -94,12 +94,21 @@ export interface IPaymentFE {
   paymentDate: string; // ISO string format recommended
 }
 
-export type OrderStatus =
-  | "Pending"
-  | "Preparing"
-  | "Out for Delivery"
-  | "Delivered"
-  | "Cancelled";
+export enum OrderStatus {
+  ACTIVE = "Active",
+  EXPIRED = "Expired",
+  CANCELLED = "Cancelled",
+}
+
+export enum DeliveryStatus { // Ensure this matches backend
+  SCHEDULED = "Scheduled",
+  IN_PROGRESS = "In Progress",
+  PARTIALLY_DELIVERED = "Partially Delivered",
+  COMPLETED = "Completed",
+  ON_HOLD = "On Hold",
+  ISSUE = "Issue",
+  CANCELLED = "Cancelled", // Delivery specific cancellation
+}
 
 export interface IOrderFE {
   _id: string;
@@ -112,6 +121,29 @@ export interface IOrderFE {
   status: OrderStatus;
   totalAmount: number;
   orderDate: string; // ISO string format recommended
+}
+
+export interface ICustomerEmbeddableFE {
+  _id: string;
+  fullName?: string;
+  email?: string;
+  mobile?: string;
+  // Add other fields you populate and need on the frontend
+}
+
+// For populated package data within an order
+export interface IPackageEmbeddableFE {
+  _id: string;
+  name?: string;
+  type?: string; // Assuming PackageType from backend enum
+  // Add other fields you populate
+}
+
+// For populated driver data within an order
+export interface IDriverEmbeddableFE {
+  _id: string;
+  fullName?: string; // Or whatever fields your User model has for drivers
+  mobile?: string;
 }
 
 export type DriverStatus = "Active" | "Inactive" | "On Delivery";
@@ -213,22 +245,28 @@ export enum DeliveryStatusFE {
 export interface IOrderAdminFE {
   _id: string;
   orderNumber: string;
-  customer: IOrderCustomerInfo | null; // Handle potential null population
-  package: IOrderPackageInfo | null; // Handle potential null population
-  packageName: string;
-  packagePrice: number;
+  customer?: ICustomerEmbeddableFE; // Populated customer
+  package?: IPackageEmbeddableFE; // Populated package
+  packageName: string; // Denormalized
+  packagePrice: number; // Price in CENTS (important for formatting)
   deliveryDays: number;
-  startDate: string;
-  endDate: string;
-  status: OrderStatus; // Original status
-  deliveryStatus: DeliveryStatusFE; // Use the new delivery status
-  deliveryAddress: IDeliveryAddressFE;
-  paymentDetails?: PaymentDetailsBase; // Make optional if not always present/needed
-  assignedDriver?: { _id: string; fullName: string } | null; // Include basic driver info if populated
-  deliverySequence?: number | null; // <-- ADDED: Sequence number (optional, nullable)
-  proofOfDeliveryUrl?: string;
-  createdAt: string;
-  updatedAt: string;
+  startDate: string; // ISO Date string
+  endDate: string; // ISO Date string
+  deliverySchedule: string[]; // Array of ISO Date strings
+  status: OrderStatus;
+  deliveryStatus: DeliveryStatus; // Added
+  assignedDriver?: IDriverEmbeddableFE | null; // Populated driver
+  // deliveryAddress and paymentDetails might be complex objects if needed fully
+  // For table view, you might only need parts or derived info
+  deliveryAddress: {
+    // Example: if you show city/postal code
+    address?: string;
+    city?: string;
+    postalCode?: string;
+  };
+  createdAt: string; // ISO Date string
+  updatedAt: string; // ISO Date string
+  // Add any other fields returned by your GET /admin/orders and GET /admin/orders/:id endpoints
 }
 
 /**
@@ -255,16 +293,18 @@ export interface ICustomerAdminFE {
  * Represents a City as fetched/managed in the Admin Panel.
  * Mirrors the backend ICity model structure.
  */
-export interface ICityAdminFE {
-  _id: string;
+export interface City {
+  id: string;
   name: string;
-  createdAt: string; // ISO Date string
-  updatedAt: string; // ISO Date string
+  created_at: string;
+  updated_at: string;
+  // Add other fields like is_active if you include them in the table
 }
 
-// Type for the Add/Edit City form data
-export interface ICityFormData {
+// For the form data in the modal
+export interface CityFormData {
   name: string;
+  // Add other fields if your form collects more
 }
 
 export interface IAdminCustomerPopulated {
@@ -356,10 +396,11 @@ export interface IGetAllDriversApiResponse {
 }
 
 export interface IOrderFilters {
-  status?: OrderStatus | "" | null; // Use the OrderStatus enum
-  search?: string | null;
-  // startDate?: string | null;
-  // endDate?: string | null;
+  status?: OrderStatus | ""; // Allow empty string for 'all'
+  deliveryStatus?: DeliveryStatus | ""; // Allow empty string for 'all'
+  search?: string;
+  sortBy?: string; // e.g., 'createdAt_desc', 'endDate_asc'
+  // Add date range filters if needed: dateFrom?: string; dateTo?: string;
 }
 
 export interface IPaginationData {

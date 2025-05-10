@@ -1,144 +1,141 @@
-// src/components/management/CityManagerWrapper.tsx (Admin Panel)
+// src/components/management/CityManagerWrapper.tsx
 import React, { useState, useEffect, useCallback } from "react";
-import type { ICityAdminFE, ICityFormData } from "../../types";
-import {
-  getAllCitiesAdminApi,
-  createCityAdminApi,
-  updateCityAdminApi,
-  deleteCityAdminApi,
-} from "../../services/city.service";
+import type { City, CityFormData } from "../../types";
+import { supabase } from "../../lib/supabaseClient"; // Import Supabase client
 import CityTable from "./CityTable";
-import ManageCityModal from "./ManageCityModal";
-// Optional: Import a confirmation library like SweetAlert2 if installed
-// import Swal from 'sweetalert2';
+import ManageCityModal from "./ManageCityModal"; // We'll create/adapt this
 
 const CityManagerWrapper: React.FC = () => {
-  const [cities, setCities] = useState<ICityAdminFE[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true); // For initial load
-  const [isActionLoading, setIsActionLoading] = useState<boolean>(false); // For add/edit/delete actions
+  const [cities, setCities] = useState<City[]>([]); // Use new City type
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isActionLoading, setIsActionLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState<boolean>(false);
-  const [editingCity, setEditingCity] = useState<ICityAdminFE | null>(null); // null for Add mode
+  const [editingCity, setEditingCity] = useState<City | null>(null); // Use new City type
 
-  // Fetch cities function
   const fetchCities = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const result = await getAllCitiesAdminApi();
-      if (result.success && Array.isArray(result.data)) {
-        setCities(result.data);
-      } else {
-        throw new Error(result.message || "Failed to fetch cities.");
-      }
-    } catch (err) {
-      setError((err as Error).message);
+      const { data, error: fetchError } = await supabase
+        .from("cities")
+        .select("*")
+        .order("name", { ascending: true }); // Order by name
+
+      if (fetchError) throw fetchError;
+      setCities(data || []);
+    } catch (err: any) {
+      setError(err.message || "Failed to fetch cities.");
       setCities([]);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  // Fetch cities on mount
   useEffect(() => {
     fetchCities();
   }, [fetchCities]);
 
-  // --- Modal Handling ---
   const handleOpenAddModal = () => {
-    setEditingCity(null); // Clear editing state for Add mode
+    setEditingCity(null);
     setModalOpen(true);
   };
 
-  const handleOpenEditModal = (city: ICityAdminFE) => {
-    setEditingCity(city); // Set city to edit
+  const handleOpenEditModal = (city: City) => {
+    // Use new City type
+    setEditingCity(city);
     setModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setModalOpen(false);
-    setEditingCity(null); // Clear editing state on close
+    setEditingCity(null);
   };
 
-  // --- CRUD Operations ---
-
-  // Handle Add/Update submission from modal
   const handleModalSubmit = async (
-    formData: ICityFormData,
-    cityId?: string
+    formData: CityFormData,
+    cityId?: string // cityId will be string (UUID from Supabase)
   ) => {
-    setIsActionLoading(true); // Indicate loading for the action
-    let result;
+    setIsActionLoading(true);
+    setError(null); // Clear previous errors specific to this operation
     try {
+      let responseError;
       if (cityId) {
-        // Editing existing city
-        console.log(`Attempting to update city ${cityId}...`, formData);
-        result = await updateCityAdminApi(cityId, formData);
+        // Editing
+        const { error } = await supabase
+          .from("cities")
+          .update({ name: formData.name.trim() /*, any other fields */ })
+          .eq("id", cityId);
+        responseError = error;
       } else {
-        // Adding new city
-        console.log(`Attempting to add new city...`, formData);
-        result = await createCityAdminApi(formData);
+        // Adding
+        const { error } = await supabase
+          .from("cities")
+          .insert([{ name: formData.name.trim() /*, any other fields */ }]);
+        responseError = error;
       }
 
-      if (result.success && result.data) {
-        await fetchCities(); // Refetch the list on success
-        handleCloseModal(); // Close modal
-        // Optional: Show success notification (e.g., using toast library)
-        console.log("City saved successfully:", result.data);
-        // Swal.fire('Success!', result.message, 'success');
-      } else {
-        // Throw error to be caught and displayed in modal
-        throw new Error(
-          result.message || `Failed to ${cityId ? "update" : "create"} city.`
-        );
+      if (responseError) {
+        if (responseError.code === "23505") {
+          // Unique constraint violation
+          throw new Error(`City "${formData.name.trim()}" already exists.`);
+        }
+        throw responseError;
       }
-    } catch (apiError) {
+
+      await fetchCities();
+      handleCloseModal();
+      // Swal.fire('Success!', `City successfully ${cityId ? "updated" : "added"}!`, 'success'); // If you use Swal
+      console.log(`City successfully ${cityId ? "updated" : "added"}!`);
+    } catch (apiError: any) {
       console.error("Error saving city:", apiError);
-      // Re-throw the error so the modal can display it
+      setError(
+        apiError.message || `Failed to ${cityId ? "update" : "create"} city.`
+      );
       throw apiError;
     } finally {
-      setIsActionLoading(false); // Reset action loading state
+      setIsActionLoading(false);
     }
   };
 
-  // Handle Delete action
   const handleDeleteCity = async (cityId: string, cityName: string) => {
-    // Simple browser confirmation (replace with styled modal if preferred)
-    if (
-      !window.confirm(
+    // Using Swal from your category example, or window.confirm
+    const confirmResult =
+      (await (window as any).Swal?.fire({
+        title: "Are you sure?",
+        text: `You are about to delete the city "${cityName}". This action cannot be undone.`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#dc3545",
+        cancelButtonColor: "#6c757d",
+        confirmButtonText: "Yes, delete it!",
+      })) ||
+      window.confirm(
         `Are you sure you want to delete the city "${cityName}"? This action cannot be undone.`
-      )
-    ) {
+      );
+
+    // Check if isConfirmed exists (for Swal) or if confirmResult is true (for window.confirm)
+    if (!(confirmResult.isConfirmed === true || confirmResult === true)) {
       return;
     }
-    // Using Swal example:
-    // const confirmation = await Swal.fire({
-    //     title: 'Are you sure?',
-    //     text: `Delete city "${cityName}"? This cannot be undone.`,
-    //     icon: 'warning',
-    //     showCancelButton: true,
-    //     confirmButtonColor: '#d33',
-    //     cancelButtonColor: '#3085d6',
-    //     confirmButtonText: 'Yes, delete it!'
-    // });
-    // if (!confirmation.isConfirmed) return;
 
     setIsActionLoading(true);
-    setError(null); // Clear previous general errors
+    setError(null);
     try {
-      console.log(`Attempting to delete city ${cityId}...`);
-      const result = await deleteCityAdminApi(cityId);
-      if (result.success) {
-        await fetchCities(); // Refetch list on success
-        console.log("City deleted successfully.");
-        // Swal.fire('Deleted!', result.message, 'success');
-      } else {
-        throw new Error(result.message || "Failed to delete city.");
-      }
-    } catch (apiError) {
+      const { error: deleteError } = await supabase
+        .from("cities")
+        .delete()
+        .eq("id", cityId);
+
+      if (deleteError) throw deleteError;
+
+      await fetchCities();
+      // Swal.fire('Deleted!', `City "${cityName}" has been deleted.`, 'success'); // If using Swal
+      console.log(`City "${cityName}" has been deleted.`);
+    } catch (apiError: any) {
       console.error("Error deleting city:", apiError);
-      setError((apiError as Error).message); // Show error message above table
-      // Swal.fire('Error!', (apiError as Error).message || 'Failed to delete city.', 'error');
+      setError(apiError.message || "Failed to delete city.");
+      // Swal.fire('Error!', apiError.message || 'Failed to delete city.', 'error'); // If using Swal
     } finally {
       setIsActionLoading(false);
     }
@@ -155,45 +152,42 @@ const CityManagerWrapper: React.FC = () => {
             <button
               className="btn btn-sm btn-primary"
               onClick={handleOpenAddModal}
-              disabled={isLoading || isActionLoading} // Disable if loading data or performing action
+              disabled={isLoading || isActionLoading}
             >
-              <i className="fas fa-plus me-1"></i> {/* Font Awesome Icon */}
-              Add City
+              <i className="fas fa-plus me-1"></i> Add City
             </button>
           </div>
         </div>
       </div>
       <div className="card-body pt-0">
-        {/* Display general error message */}
-        {error &&
-          !modalOpen && ( // Don't show general error if modal is open (modal shows its own)
-            <div className="alert alert-danger" role="alert">
-              Error: {error}
-              {/* Optional: Add retry button */}
-              <button
-                onClick={fetchCities}
-                className="btn btn-sm btn-danger ms-2"
-              >
-                Retry Fetch
-              </button>
-            </div>
-          )}
-
+        {error && !modalOpen && (
+          <div className="alert alert-danger" role="alert">
+            Error: {error}
+            <button
+              onClick={() => {
+                fetchCities();
+                setError(null);
+              }}
+              className="btn btn-sm btn-danger ms-2"
+            >
+              Retry
+            </button>
+          </div>
+        )}
         <CityTable
           cities={cities}
-          isLoading={isLoading} // Pass initial loading state
-          isActionLoading={isActionLoading} // Pass action loading state
+          isLoading={isLoading}
+          isActionLoading={isActionLoading}
           onEdit={handleOpenEditModal}
           onDelete={handleDeleteCity}
         />
       </div>
-
-      {/* Add/Edit Modal */}
       <ManageCityModal
         isOpen={modalOpen}
         onClose={handleCloseModal}
-        onSubmit={handleModalSubmit}
+        onSubmit={handleModalSubmit} // This will be called from the modal
         initialData={editingCity}
+        isActionLoading={isActionLoading} // Pass loading state to modal
       />
     </div>
   );

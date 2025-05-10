@@ -5,11 +5,15 @@ import React, {
   forwardRef,
 } from "react";
 import Swal from "sweetalert2";
+// 1. Import Supabase client
+import { supabase } from "../../lib/supabaseClient"; // Adjust path as needed
 
+// 2. Updated Category interface
 interface Category {
-  _id: string;
+  id: string;
   name: string;
-  createdAt: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CategoryTableHandle {
@@ -19,45 +23,30 @@ export interface CategoryTableHandle {
 const CategoryTable = forwardRef<CategoryTableHandle>((_props, ref) => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null); // For displaying fetch errors
 
-  const API_BASE_URL = import.meta.env.PUBLIC_API_BASE_URL;
+  // API_BASE_URL is no longer needed
 
   const fetchCategories = async () => {
     setLoading(true);
+    setError(null); // Reset error before fetch
     try {
-      const res = await fetch(`${API_BASE_URL}/categories`);
-      // Check for non-OK status codes first
-      if (!res.ok) {
-        // Try to parse error message from backend if possible
-        let errorMsg = `HTTP error! status: ${res.status}`;
-        try {
-          const errorData = await res.json();
-          errorMsg = errorData.message || errorMsg;
-        } catch (parseError) {
-          // Ignore if response isn't JSON
-        }
-        throw new Error(errorMsg);
+      // 3. Fetch categories using Supabase
+      const { data, error: fetchError } = await supabase
+        .from("categories")
+        .select("*") // Select all columns
+        .order("created_at", { ascending: false }); // Optional: order by creation date
+
+      if (fetchError) {
+        console.error("Error fetching categories:", fetchError);
+        throw fetchError; // Throw error to be caught by catch block
       }
 
-      // Parse the JSON response
-      const data = await res.json();
-
-      // *** CORRECTED CHECK ***
-      // Check for success flag and that 'data.data' is an array
-      if (data.success && Array.isArray(data.data)) {
-        setCategories(data.data); // Use data.data!
-      } else {
-        // Log if the structure is unexpected (e.g., success is false, or data.data isn't an array)
-        console.warn(
-          "⚠️ Unexpected response structure in CategoryTable:",
-          data
-        );
-        setCategories([]); // Set to empty if structure is wrong
-      }
-    } catch (err) {
-      console.error("❌ Fetch categories error in CategoryTable:", err);
-      setCategories([]); // Also set to empty on fetch errors
-      // Optionally: Show an error message to the user here
+      setCategories(data || []); // Set to data or empty array if data is null
+    } catch (err: any) {
+      console.error("Fetch categories error in CategoryTable:", err);
+      setError(err.message || "Failed to fetch categories.");
+      setCategories([]);
     } finally {
       setLoading(false);
     }
@@ -71,8 +60,8 @@ const CategoryTable = forwardRef<CategoryTableHandle>((_props, ref) => {
     refetch: fetchCategories,
   }));
 
-  const handleDelete = async (id: string) => {
-    const confirm = await Swal.fire({
+  const handleDelete = async (categoryId: string) => {
+    const result = await Swal.fire({
       title: "Are you sure?",
       text: "This category will be deleted permanently.",
       icon: "warning",
@@ -82,34 +71,40 @@ const CategoryTable = forwardRef<CategoryTableHandle>((_props, ref) => {
       confirmButtonText: "Yes, delete it!",
     });
 
-    if (!confirm.isConfirmed) return;
+    if (!result.isConfirmed) return;
 
     try {
-      const res = await fetch(`${API_BASE_URL}/categories/${id}`, {
-        method: "DELETE",
-      });
+      // 4. Delete category using Supabase
+      const { error: deleteError } = await supabase
+        .from("categories")
+        .delete()
+        .match({ id: categoryId }); // Match by 'id'
 
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        Swal.fire("Deleted!", data.message, "success");
-        setCategories((prev) => prev.filter((cat) => cat._id !== id));
-      } else {
-        throw new Error(data.message || "Delete failed");
+      if (deleteError) {
+        throw deleteError;
       }
-    } catch (error) {
-      console.error("❌ Delete Error:", error);
-      Swal.fire("Error", "Failed to delete category", "error");
+
+      Swal.fire("Deleted!", "The category has been deleted.", "success");
+      // Refetch categories to update the list
+      fetchCategories();
+      // Or, for a more optimistic update:
+      // setCategories((prev) => prev.filter((cat) => cat.id !== categoryId));
+    } catch (err: any) {
+      console.error("Delete category error:", err);
+      Swal.fire("Error", err.message || "Failed to delete category.", "error");
     }
   };
 
   return (
     <div className="table-responsive">
-      {loading ? (
-        <p className="text-center py-4">🔄 Loading categories...</p>
-      ) : categories.length === 0 ? (
-        <p className="text-center py-4">🚫 No categories found.</p>
-      ) : (
+      {loading && <p className="text-center py-4">🔄 Loading categories...</p>}
+      {!loading && error && (
+        <p className="text-center py-4 text-danger">Error: {error}</p>
+      )}
+      {!loading && !error && categories.length === 0 && (
+        <p className="text-center py-4">🚫 No categories found. Add one!</p>
+      )}
+      {!loading && !error && categories.length > 0 && (
         <table className="table table-hover mb-0">
           <thead>
             <tr>
@@ -121,15 +116,17 @@ const CategoryTable = forwardRef<CategoryTableHandle>((_props, ref) => {
           </thead>
           <tbody>
             {categories.map((category, index) => (
-              <tr key={category._id}>
+              <tr key={category.id}>
+                {" "}
+                {/* Use category.id */}
                 <td>{index + 1}</td>
                 <td>{category.name || "Untitled"}</td>
-                <td>{new Date(category.createdAt).toLocaleString()}</td>
+                <td>{new Date(category.created_at).toLocaleString()}</td>
                 <td className="text-end">
                   <button
                     className="btn btn-sm btn-outline-danger"
                     title="Delete category"
-                    onClick={() => handleDelete(category._id)}
+                    onClick={() => handleDelete(category.id)}
                   >
                     <i className="las la-trash-alt" /> Delete
                   </button>

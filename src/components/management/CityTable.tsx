@@ -1,14 +1,13 @@
-// src/components/management/CityTable.tsx (Admin Panel)
+// src/components/management/CityTable.tsx
 import React from "react";
-import type { ICityAdminFE } from "../../types";
-// Import icons
+// Assuming City type is imported from a shared location or defined here based on Supabase
+import type { City } from "../../types";
 import { HiOutlinePencilSquare, HiOutlineTrash } from "react-icons/hi2";
 
-// Helper: Format Date
-const formatDate = (dateString: string): string => {
+const formatDate = (dateString: string | null | undefined): string => {
+  if (!dateString) return "N/A";
   try {
     return new Date(dateString).toLocaleString("en-CA", {
-      // Canadian locale
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -21,13 +20,12 @@ const formatDate = (dateString: string): string => {
   }
 };
 
-// Props Interface
 interface CityTableProps {
-  cities: ICityAdminFE[];
-  isLoading: boolean; // For overall loading state
-  isActionLoading: boolean; // For disabling actions during add/edit/delete
-  onEdit: (city: ICityAdminFE) => void; // Callback to open edit modal
-  onDelete: (cityId: string, cityName: string) => void; // Callback to trigger delete
+  cities: City[];
+  isLoading: boolean;
+  isActionLoading: boolean;
+  onEdit: (city: City) => void;
+  onDelete: (cityId: string, cityName: string) => void;
 }
 
 const CityTable: React.FC<CityTableProps> = ({
@@ -40,11 +38,7 @@ const CityTable: React.FC<CityTableProps> = ({
   return (
     <div className="table-responsive">
       <table className="table table-hover mb-0">
-        {" "}
-        {/* Bootstrap table classes */}
-        <thead className="">
-          {" "}
-          {/* Use template header style */}
+        <thead>
           <tr>
             <th>#</th>
             <th>City Name</th>
@@ -70,19 +64,21 @@ const CityTable: React.FC<CityTableProps> = ({
           )}
           {!isLoading &&
             cities.map((city, index) => (
-              <tr key={city._id}>
+              <tr key={city.id}>
+                {" "}
+                {/* Use city.id */}
                 <td>{index + 1}</td>
                 <td className="fw-medium">{city.name}</td>
                 <td className="fs-sm text-muted">
-                  {formatDate(city.createdAt)}
+                  {formatDate(city.created_at)}
                 </td>
                 <td className="fs-sm text-muted">
-                  {formatDate(city.updatedAt)}
+                  {formatDate(city.updated_at)}
                 </td>
                 <td className="text-end">
                   <button
                     title="Edit City"
-                    className="btn btn-sm btn-link p-0 me-2" // Bootstrap link button style
+                    className="btn btn-sm btn-link p-0 me-2"
                     onClick={() => onEdit(city)}
                     disabled={isActionLoading}
                     style={{ color: "inherit" }}
@@ -90,18 +86,16 @@ const CityTable: React.FC<CityTableProps> = ({
                     <HiOutlinePencilSquare
                       size={18}
                       className="text-secondary"
-                    />{" "}
-                    {/* react-icon */}
+                    />
                   </button>
                   <button
                     title="Delete City"
                     className="btn btn-sm btn-link p-0"
-                    onClick={() => onDelete(city._id, city.name)}
+                    onClick={() => onDelete(city.id, city.name)}
                     disabled={isActionLoading}
                     style={{ color: "inherit" }}
                   >
-                    <HiOutlineTrash size={18} className="text-danger" />{" "}
-                    {/* react-icon */}
+                    <HiOutlineTrash size={18} className="text-danger" />
                   </button>
                 </td>
               </tr>
