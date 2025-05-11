@@ -32,13 +32,13 @@ export const menu = [
   {
     label: "Subscription Management",
     items: [
-      { title: "Customers", href: "/customers", icon: Users },
+      // { title: "Customers", href: "/customers", icon: Users },
       { title: "Plans", href: "/package-management", icon: FileText },
       { title: "Addons", href: "/addons", icon: FileText },
       { title: "Categories", href: "/management/categories", icon: Layers3 },
-      { title: "Payments", href: "/payments", icon: CreditCard },
+      // { title: "Payments", href: "/payments", icon: CreditCard },
 
-      { title: "Invoices", href: "/invoices", icon: Receipt },
+      // { title: "Invoices", href: "/invoices", icon: Receipt },
     ],
   },
 
@@ -60,19 +60,19 @@ export const menu = [
   //     { title: "Support Tickets", href: "/support", icon: HelpCircle },
   //   ],
   // },
-  {
-    label: "Reports & Analytics",
-    items: [
-      { title: "Sales Reports", href: "/reports/sales", icon: BarChart2 },
-      // { title: "User Insights", href: "/reports/customers", icon: PieChart },
-    ],
-  },
-  {
-    label: "Account",
-    items: [
-      { title: "Settings", href: "/settings", icon: Settings },
-      { title: "Security", href: "/security", icon: ShieldCheck },
-      { title: "Logout", href: "#", onClick: "logoutAdmin()", icon: LogOut },
-    ],
-  },
+  // {
+  //   label: "Reports & Analytics",
+  //   items: [
+  //     { title: "Sales Reports", href: "/reports/sales", icon: BarChart2 },
+  //     // { title: "User Insights", href: "/reports/customers", icon: PieChart },
+  //   ],
+  // },
+  // {
+  //   label: "Account",
+  //   items: [
+  //     { title: "Settings", href: "/settings", icon: Settings },
+  //     { title: "Security", href: "/security", icon: ShieldCheck },
+  //     { title: "Logout", href: "#", onClick: "logoutAdmin()", icon: LogOut },
+  //   ],
+  // },
 ];
