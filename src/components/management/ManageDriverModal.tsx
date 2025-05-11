@@ -1,23 +1,43 @@
 // src/components/management/ManageDriverModal.tsx
-
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import type { IDriverFE, IDriverFormData } from "../../types"; // Adjust path
 
-// --- Component Props ---
+// --- Component-Specific Interfaces ---
+// (Copied from DriverManagerWrapper - for props and form data)
+export interface Driver {
+  id: string; // Corresponds to auth.users.id and drivers.id
+  email?: string | null;
+  fullName?: string | null;
+  phone?: string | null;
+  vehicleNumber?: string | null;
+  isActive: boolean;
+  createdAt?: string; // Registration date from auth.users
+}
+// --- End Interface ---
+
+export interface DriverFormData {
+  email: string;
+  password?: string; // Required for new, optional for update
+  fullName: string; // Made non-optional for form
+  phone: string; // Made non-optional for form
+  vehicleNumber?: string | null; // Kept optional
+  isActive: boolean;
+}
+// --- End Interfaces ---
+
 interface ManageDriverModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (formData: IDriverFormData) => Promise<any>; // Expects async, can throw error
-  initialData: IDriverFE | null; // null for Add, driver data for Edit
+  onSubmit: (formData: DriverFormData) => Promise<void>; // Expects async, can throw error
+  initialData: Driver | null;
 }
 
-// --- Initial Form State ---
-const defaultFormData: IDriverFormData = {
+const defaultFormData: DriverFormData = {
+  email: "",
   fullName: "",
   phone: "",
   vehicleNumber: "",
-  password: "", // Keep password field, make optional in edit
-  status: "Active", // Default status
+  password: "",
+  isActive: true, // Default new drivers to Active
 };
 
 const ManageDriverModal: React.FC<ManageDriverModalProps> = ({
@@ -26,48 +46,42 @@ const ManageDriverModal: React.FC<ManageDriverModalProps> = ({
   onSubmit,
   initialData,
 }) => {
-  // --- State ---
-  const [formData, setFormData] = useState<IDriverFormData>(defaultFormData);
-  const [error, setError] = useState<string | null>(null);
+  const [formData, setFormData] = useState<DriverFormData>(defaultFormData);
+  const [error, setError] = useState<string | null>(null); // Local modal error
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  // --- Memoized Values ---
   const isEditMode = useMemo(() => !!initialData, [initialData]);
   const modalTitle = useMemo(
     () => (isEditMode ? "Edit Driver" : "Add New Driver"),
     [isEditMode]
   );
 
-  // --- Effects ---
-  // Populate/Reset Form based on Mode and Open State
   useEffect(() => {
     if (isOpen) {
       if (isEditMode && initialData) {
-        // Populate form for Edit mode, EXCLUDING password
         setFormData({
-          fullName: initialData.fullName,
-          phone: initialData.phone,
-          vehicleNumber: initialData.vehicleNumber,
-          status: initialData.status,
-          password: "", // ALWAYS leave password blank in edit form initially
+          email: initialData.email || "", // Email should be present if editing
+          fullName: initialData.fullName || "",
+          phone: initialData.phone || "",
+          vehicleNumber: initialData.vehicleNumber || "",
+          isActive: initialData.isActive,
+          password: "", // Always clear password on open for edit
         });
       } else {
-        // Reset form for Add mode
         setFormData(defaultFormData);
       }
-      // Clear previous submission errors when modal opens/changes mode
       setError(null);
-      setIsSubmitting(false); // Ensure submitting state is reset
+      setIsSubmitting(false);
     }
   }, [initialData, isEditMode, isOpen]);
 
-  // --- Handlers ---
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-      const { name, value } = e.target;
+      const { name, value, type } = e.target;
       setFormData((prev) => ({
         ...prev,
-        [name]: value,
+        [name]:
+          type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
       }));
     },
     []
@@ -77,44 +91,44 @@ const ManageDriverModal: React.FC<ManageDriverModalProps> = ({
     e.preventDefault();
     setError(null);
 
-    // --- Client-Side Validation ---
-    if (!formData.fullName.trim()) {
+    if (!formData.email.trim()) {
+      setError("Email is required.");
+      return;
+    }
+    if (!formData.fullName?.trim()) {
       setError("Full Name is required.");
       return;
     }
-    if (!formData.phone.trim()) {
+    if (!formData.phone?.trim()) {
       setError("Phone Number is required.");
       return;
     }
-    if (!formData.vehicleNumber.trim()) {
-      setError("Vehicle Number is required.");
-      return;
-    }
-    // Password is required ONLY when adding a new driver
+    // Password is required for new drivers
     if (!isEditMode && !formData.password?.trim()) {
       setError("Password is required for new drivers.");
       return;
     }
-    if (formData.password && formData.password.length < 8) {
-      setError("Password must be at least 8 characters long.");
+    if (formData.password && formData.password.length < 6) {
+      // Supabase default min length
+      setError("Password must be at least 6 characters long.");
       return;
     }
-    // --- End Validation ---
 
     setIsSubmitting(true);
     try {
-      await onSubmit(formData); // Call the async onSubmit passed from parent
-      // Parent (Wrapper) handles success (closing modal, showing notification)
+      await onSubmit(formData); // Parent (DriverManagerWrapper) handles actual API call & success
+      // If onSubmit doesn't throw, it's considered a success by the wrapper
+      // The wrapper will show notification and close modal.
     } catch (submitError: any) {
-      // If onSubmit prop throws/returns an error, display it in the modal
-      console.error("Modal Submission Error caught:", submitError);
-      setError(submitError.message || "An unexpected error occurred.");
+      console.error("Modal Submission Error caught by modal:", submitError);
+      setError(
+        submitError.message || "An unexpected error occurred during submission."
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // --- Render Logic ---
   if (!isOpen) return null;
 
   return (
@@ -131,8 +145,6 @@ const ManageDriverModal: React.FC<ManageDriverModalProps> = ({
         role="dialog"
       >
         <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-          {" "}
-          {/* Standard size */}
           <div className="modal-content">
             <form onSubmit={handleSubmit}>
               <div className="modal-header">
@@ -146,14 +158,33 @@ const ManageDriverModal: React.FC<ManageDriverModalProps> = ({
                 ></button>
               </div>
               <div className="modal-body">
-                {/* Error Display */}
                 {error && (
                   <div className="alert alert-danger py-2" role="alert">
                     {error}
                   </div>
                 )}
 
-                {/* Form Fields */}
+                <div className="mb-3">
+                  <label htmlFor="driverEmail" className="form-label">
+                    Email <span className="text-danger">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    className="form-control"
+                    id="driverEmail"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                    disabled={isSubmitting || isEditMode} // Disable email edit for simplicity
+                  />
+                  {isEditMode && (
+                    <div className="form-text">
+                      Email cannot be changed after creation.
+                    </div>
+                  )}
+                </div>
+
                 <div className="mb-3">
                   <label htmlFor="driverFullName" className="form-label">
                     Full Name <span className="text-danger">*</span>
@@ -163,10 +194,9 @@ const ManageDriverModal: React.FC<ManageDriverModalProps> = ({
                     className="form-control"
                     id="driverFullName"
                     name="fullName"
-                    value={formData.fullName}
+                    value={formData.fullName || ""}
                     onChange={handleChange}
                     required
-                    maxLength={100}
                     disabled={isSubmitting}
                   />
                 </div>
@@ -177,30 +207,27 @@ const ManageDriverModal: React.FC<ManageDriverModalProps> = ({
                       Phone Number <span className="text-danger">*</span>
                     </label>
                     <input
-                      type="tel" // Use type="tel" for phone numbers
+                      type="tel"
                       className="form-control"
                       id="driverPhone"
                       name="phone"
-                      value={formData.phone}
+                      value={formData.phone || ""}
                       onChange={handleChange}
                       required
-                      maxLength={20}
                       disabled={isSubmitting}
                     />
                   </div>
                   <div className="col-md-6">
                     <label htmlFor="driverVehicleNumber" className="form-label">
-                      Vehicle No <span className="text-danger">*</span>
+                      Vehicle No
                     </label>
                     <input
                       type="text"
                       className="form-control"
                       id="driverVehicleNumber"
                       name="vehicleNumber"
-                      value={formData.vehicleNumber}
+                      value={formData.vehicleNumber || ""}
                       onChange={handleChange}
-                      required
-                      maxLength={20}
                       disabled={isSubmitting}
                     />
                   </div>
@@ -217,14 +244,11 @@ const ManageDriverModal: React.FC<ManageDriverModalProps> = ({
                       className="form-control"
                       id="driverPassword"
                       name="password"
-                      value={formData.password}
+                      value={formData.password || ""}
                       onChange={handleChange}
-                      minLength={8}
-                      required={!isEditMode} // Required only in Add mode
+                      required={!isEditMode}
                       placeholder={
-                        isEditMode
-                          ? "Enter new password to change"
-                          : "Min 8 characters"
+                        isEditMode ? "To change, enter new" : "Min 6 characters"
                       }
                       disabled={isSubmitting}
                     />
@@ -235,20 +259,25 @@ const ManageDriverModal: React.FC<ManageDriverModalProps> = ({
                     )}
                   </div>
                   <div className="col-md-6">
-                    <label htmlFor="driverStatus" className="form-label">
+                    <label htmlFor="driverIsActive" className="form-label">
                       Status <span className="text-danger">*</span>
                     </label>
                     <select
                       className="form-select"
-                      id="driverStatus"
-                      name="status"
-                      value={formData.status}
-                      onChange={handleChange}
+                      id="driverIsActive"
+                      name="isActive"
+                      value={formData.isActive ? "true" : "false"} // Select expects string values
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          isActive: e.target.value === "true",
+                        }))
+                      }
                       required
                       disabled={isSubmitting}
                     >
-                      <option value="Active">Active</option>
-                      <option value="Inactive">Inactive</option>
+                      <option value="true">Active</option>
+                      <option value="false">Inactive</option>
                     </select>
                   </div>
                 </div>
@@ -267,20 +296,11 @@ const ManageDriverModal: React.FC<ManageDriverModalProps> = ({
                   className="btn btn-primary"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? (
-                    <>
-                      <span
-                        className="spinner-border spinner-border-sm me-2"
-                        role="status"
-                        aria-hidden="true"
-                      ></span>
-                      Saving...
-                    </>
-                  ) : isEditMode ? (
-                    "Save Changes"
-                  ) : (
-                    "Create Driver"
-                  )}
+                  {isSubmitting
+                    ? "Saving..."
+                    : isEditMode
+                    ? "Save Changes"
+                    : "Create Driver"}
                 </button>
               </div>
             </form>

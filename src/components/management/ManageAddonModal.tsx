@@ -1,56 +1,49 @@
 // src/components/management/ManageAddonModal.tsx
 import React, { useState, useEffect, type FormEvent, forwardRef } from "react";
 import Swal from "sweetalert2";
-
-// Reuse the Addon interface
-interface Addon {
-  _id: string;
-  name: string;
-  price: number;
-  image: string; // This will now directly hold the URL string
-  createdAt: string;
-  updatedAt: string;
-}
+import type { Addon, AddonFormData as LocalAddonFormData } from "../../types"; // Assuming types are in src/types
 
 interface ManageAddonModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (addonData: Partial<Addon>) => Promise<void>;
+  onSubmit: (addonData: Partial<Addon>, isUpdating: boolean) => Promise<void>; // Pass isUpdating
   initialData: Addon | null;
   isLoading: boolean;
-  apiError: string | null;
+  apiError: string | null; // Error from Supabase operations
 }
 
 const ManageAddonModal = forwardRef<HTMLDivElement, ManageAddonModalProps>(
   ({ isOpen, onClose, onSubmit, initialData, isLoading, apiError }, ref) => {
     const [name, setName] = useState("");
     const [price, setPrice] = useState<number | "">("");
-    // --- MODIFIED: State for image URL string ---
-    const [imageUrl, setImageUrl] = useState<string>("");
+    const [imageUrl, setImageUrl] = useState<string>(""); // For image_url
 
-    // Effect to populate form or reset
     useEffect(() => {
-      if (initialData) {
-        setName(initialData.name);
-        setPrice(initialData.price);
-        // --- MODIFIED: Set image URL state from initialData ---
-        setImageUrl(initialData.image || ""); // Use existing image URL or empty string
-      } else {
-        setName("");
-        setPrice("");
-
-        setImageUrl("");
+      if (isOpen) {
+        // Only update form when modal becomes visible or initialData changes
+        if (initialData) {
+          setName(initialData.name);
+          setPrice(initialData.price);
+          setImageUrl(initialData.image_url || ""); // Use image_url
+        } else {
+          setName("");
+          setPrice("");
+          setImageUrl("");
+        }
       }
     }, [initialData, isOpen]);
 
     const handleSubmit = async (event: FormEvent) => {
       event.preventDefault();
 
-      if (!name || price === "" || Number(price) < 0) {
-        Swal.fire(/* Validation Error */);
+      if (!name.trim() || price === "" || Number(price) < 0) {
+        Swal.fire(
+          "Validation Error",
+          "Addon Name and a valid Price (0 or more) are required.",
+          "warning"
+        );
         return;
       }
-      // Basic URL validation (optional but recommended)
       if (imageUrl && !/^https?:\/\/.+\..+/.test(imageUrl)) {
         Swal.fire(
           "Validation Error",
@@ -60,31 +53,33 @@ const ManageAddonModal = forwardRef<HTMLDivElement, ManageAddonModalProps>(
         return;
       }
 
-      // Prepare data - include the imageUrl directly
-      const addonData: Partial<Addon> = {
-        _id: initialData?._id,
-        name,
+      const addonSubmitData: Partial<Addon> = {
+        name: name.trim(),
         price: Number(price),
-        // --- MODIFIED: Use imageUrl state directly ---
-        image: imageUrl,
+        image_url: imageUrl.trim() || null, // Send null if empty, Supabase handles this well
       };
 
-      // --- MODIFIED: Call onSubmit without imageFile ---
-      await onSubmit(addonData);
+      // If updating, include the id
+      if (initialData?.id) {
+        addonSubmitData.id = initialData.id;
+      }
+
+      await onSubmit(addonSubmitData, !!initialData?.id);
     };
 
-    // Always render the modal structure
     return (
       <div
-        ref={ref}
-        className={`modal fade`}
-        id="addonModal" /* ... other attributes ... */
+        ref={ref} // This ref is for the Bootstrap modal instance management by parent
+        className={`modal fade`} // isOpen state in parent will control Bootstrap's show/hide
+        id="addonManagementModal" // Ensure this ID is unique if you have multiple modals
+        tabIndex={-1}
+        aria-labelledby="addonModalLabel"
+        aria-hidden={!isOpen} // For accessibility, controlled by isOpen prop
       >
         <div className="modal-dialog modal-dialog-centered">
           <div className="modal-content">
             <form onSubmit={handleSubmit}>
               <div className="modal-header">
-                {/* ... title, close button ... */}
                 <h5 className="modal-title" id="addonModalLabel">
                   {initialData ? "Edit Addon" : "Add New Addon"}
                 </h5>
@@ -98,18 +93,19 @@ const ManageAddonModal = forwardRef<HTMLDivElement, ManageAddonModalProps>(
               </div>
               <div className="modal-body">
                 {apiError && (
-                  <div className="alert alert-danger">{apiError}</div>
+                  <div className="alert alert-danger py-2" role="alert">
+                    {apiError}
+                  </div>
                 )}
 
-                {/* Name Input (no change) */}
                 <div className="mb-3">
-                  <label htmlFor="addonName" className="form-label">
+                  <label htmlFor="addonNameModal" className="form-label">
                     Addon Name <span className="text-danger">*</span>
                   </label>
                   <input
                     type="text"
                     className="form-control"
-                    id="addonName"
+                    id="addonNameModal"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
@@ -117,15 +113,14 @@ const ManageAddonModal = forwardRef<HTMLDivElement, ManageAddonModalProps>(
                   />
                 </div>
 
-                {/* Price Input (no change) */}
                 <div className="mb-3">
-                  <label htmlFor="addonPrice" className="form-label">
+                  <label htmlFor="addonPriceModal" className="form-label">
                     Price <span className="text-danger">*</span>
                   </label>
                   <input
                     type="number"
                     className="form-control"
-                    id="addonPrice"
+                    id="addonPriceModal"
                     value={price}
                     onChange={(e) =>
                       setPrice(
@@ -134,48 +129,41 @@ const ManageAddonModal = forwardRef<HTMLDivElement, ManageAddonModalProps>(
                     }
                     required
                     min="0"
-                    step="0.01"
+                    step="0.01" // Or your desired step
                     disabled={isLoading}
                   />
                 </div>
 
-                {/* --- MODIFIED: Image URL Input & Preview --- */}
                 <div className="mb-3">
-                  <label htmlFor="addonImageUrl" className="form-label">
+                  <label htmlFor="addonImageUrlModal" className="form-label">
                     Image URL
                   </label>
                   <input
-                    type="text" // Changed type to text
+                    type="text"
                     className="form-control"
-                    id="addonImageUrl"
+                    id="addonImageUrlModal"
                     placeholder="https://example.com/image.png"
-                    value={imageUrl} // Bind value to imageUrl state
-                    onChange={(e) => setImageUrl(e.target.value)} // Update imageUrl state
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
                     disabled={isLoading}
                   />
-                  {/* Display preview if imageUrl is not empty */}
-                  {imageUrl && (
+                  {imageUrl && ( // Simple preview
                     <div className="mt-2">
                       <img
-                        src={imageUrl} // Preview directly from URL state
+                        src={imageUrl}
                         alt="Preview"
                         style={{
-                          maxWidth: "150px",
-                          maxHeight: "150px",
+                          maxWidth: "100px",
+                          maxHeight: "100px",
                           objectFit: "contain",
-                        }} // Adjusted preview size
-                        // Optional: Add error handling for broken links
-                        onError={(e) => {
-                          console.warn(
-                            "Failed to load image preview from URL:",
-                            imageUrl
-                          );
                         }}
+                        onError={(e) =>
+                          (e.currentTarget.style.display = "none")
+                        } // Hide if image link is broken
                       />
                     </div>
                   )}
                 </div>
-                {/* --- End of Modified Section --- */}
               </div>
               <div className="modal-footer">
                 <button
@@ -191,7 +179,11 @@ const ManageAddonModal = forwardRef<HTMLDivElement, ManageAddonModalProps>(
                   className="btn btn-primary"
                   disabled={isLoading}
                 >
-                  Save
+                  {isLoading
+                    ? "Saving..."
+                    : initialData
+                    ? "Save Changes"
+                    : "Create Addon"}
                 </button>
               </div>
             </form>

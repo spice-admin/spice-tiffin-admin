@@ -1,11 +1,11 @@
+// src/components/settings/DeliveryDateManager.tsx
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Calendar from "react-calendar";
-import axios from "axios"; // Or your preferred HTTP client
+import { supabase } from "../../lib/supabaseClient"; // Adjust path to your Supabase client
 import {
   format,
   startOfMonth,
   endOfMonth,
-  eachDayOfInterval,
   isEqual,
   startOfDay,
   addMonths,
@@ -13,247 +13,192 @@ import {
   isBefore,
   isValid,
 } from "date-fns";
+import type { User } from "@supabase/supabase-js";
 
-// --- TypeScript Interfaces ---
-
-interface OperationalDateDB {
-  _id?: string;
-  date: string; // ISO string from DB
-  isDeliveryEnabled: boolean;
-  notes?: string;
-  setBy?: string;
-  createdAt?: string;
-  updatedAt?: string;
+// --- TypeScript Interfaces (as defined in Step 2) ---
+interface DeliveryScheduleDB {
+  event_date: string; // "yyyy-MM-dd"
+  is_delivery_enabled: boolean;
+  notes?: string | null;
+  updated_at?: string;
+  updated_by?: string | null;
 }
-
+type FetchedDatesState = Record<string, DeliveryScheduleDB>;
 interface ModifiedDateInfo {
-  isDeliveryEnabled: boolean;
-  originalStatus?: boolean; // To track if it was initially enabled
-  notes?: string; // We can add UI for notes later if needed
+  is_delivery_enabled: boolean;
+  original_status?: boolean;
+  notes?: string | null;
 }
-
-// Type for the state storing fetched and modified dates
-// Key is YYYY-MM-DD string
-type OperationalDatesState = Record<string, OperationalDateDB>;
 type ModifiedDatesState = Record<string, ModifiedDateInfo>;
 
-// --- API Configuration ---
-const BACKEND_API_ROOT = import.meta.env.PUBLIC_API_BASE_URL;
-const OPERATIONAL_DATES_API_ENDPOINT = `${BACKEND_API_ROOT}/operational-dates`;
-const AUTH_TOKEN_KEY = "token";
-
-// Ensure the root URL is defined
-if (!BACKEND_API_ROOT) {
-  console.error(
-    "FATAL ERROR: PUBLIC_API_BASE_URL is not defined in environment variables. Frontend won't be able to connect to the backend."
-  );
-  // You might want to throw an error or display a more user-friendly message
-}
-
-function getAuthAdminToken(): string | null {
-  if (typeof window !== "undefined") {
-    return localStorage.getItem(AUTH_TOKEN_KEY);
-  }
-  return null;
-}
-
 const DeliveryDateManager: React.FC = () => {
-  const [activeStartDate, setActiveStartDate] = useState<Date>(new Date()); // For calendar navigation
-  const [fetchedDates, setFetchedDates] = useState<OperationalDatesState>({});
+  const [activeStartDate, setActiveStartDate] = useState<Date>(
+    startOfDay(new Date())
+  );
+  const [fetchedDates, setFetchedDates] = useState<FetchedDatesState>({});
   const [modifiedDates, setModifiedDates] = useState<ModifiedDatesState>({});
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const today = useMemo(() => startOfDay(new Date()), []); // Memoize today's date
+  const today = useMemo(() => startOfDay(new Date()), []);
 
-  // --- API Call Functions ---
-  const fetchOperationalDates = useCallback(
-    async (startDate: Date, endDate: Date) => {
-      if (!BACKEND_API_ROOT) {
-        // Check if the base URL is available
-        setError("API base URL is not configured. Cannot fetch data.");
-        setIsLoading(false);
-        return;
+  useEffect(() => {
+    const getSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      setCurrentUser(session?.user ?? null);
+      if (!session?.user) {
+        setError("Admin user session not found. Please log in.");
+        setIsLoading(false); // Stop loading if no user
       }
-      const token = getAuthAdminToken();
-      if (!token) {
-        setError("Admin authentication token not found. Please log in.");
-        setIsLoading(false);
+    };
+    getSession();
+  }, []);
+
+  const fetchDeliverySchedule = useCallback(
+    async (viewStart: Date, viewEnd: Date) => {
+      if (!currentUser) {
+        // Don't fetch if user isn't determined yet or is null
+        // Error is set by the useEffect that fetches user
+        // setIsLoading(false); // Ensure loading is false if we bail early
         return;
       }
       setIsLoading(true);
       setError(null);
       try {
-        const response = await axios.get<{
-          success: boolean;
-          data: OperationalDateDB[];
-        }>(`${OPERATIONAL_DATES_API_ENDPOINT}`, {
-          params: {
-            startDate: format(startDate, "yyyy-MM-dd"),
-            endDate: format(endDate, "yyyy-MM-dd"),
-          },
-          headers: {
-            // <-- ADD THIS
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json", // Good practice, though GET might not strictly need it
-          },
-          //withCredentials: true, // Keep this for now, we'll address CORS for it next
-        });
-        if (response.data.success) {
-          const newFetchedDates: OperationalDatesState = {};
-          response.data.data.forEach((opDate) => {
-            // Ensure date from DB (likely ISO string) is treated as UTC midnight
-            const dateKey = format(new Date(opDate.date), "yyyy-MM-dd");
-            newFetchedDates[dateKey] = {
-              ...opDate,
-              date: dateKey, // Store normalized date key
-            };
+        const { data, error: fetchError } = await supabase
+          .from("delivery_schedule")
+          .select(
+            "event_date, is_delivery_enabled, notes, updated_by, updated_at"
+          )
+          .gte("event_date", format(viewStart, "yyyy-MM-dd"))
+          .lte("event_date", format(viewEnd, "yyyy-MM-dd"));
+
+        if (fetchError) throw fetchError;
+
+        const newFetchedDates: FetchedDatesState = {};
+        if (data) {
+          data.forEach((item: DeliveryScheduleDB) => {
+            // event_date from Supabase DATE type should already be "yyyy-MM-dd"
+            newFetchedDates[item.event_date] = item;
           });
-          setFetchedDates((prev) => ({ ...prev, ...newFetchedDates })); // Merge with existing to keep other months' data
-        } else {
-          throw new Error("Failed to fetch operational dates from API.");
         }
+        // Merge to keep data from other months if already fetched
+        setFetchedDates((prev) => ({ ...prev, ...newFetchedDates }));
       } catch (err) {
-        console.error("Error fetching operational dates:", err);
-        const message =
-          err instanceof Error ? err.message : "An unknown error occurred.";
-        setError(`Failed to load delivery dates: ${message}`);
+        console.error("Error fetching delivery schedule:", err);
+        setError(`Failed to load delivery dates: ${(err as Error).message}`);
       } finally {
         setIsLoading(false);
       }
     },
-    []
-  );
+    [currentUser]
+  ); // Depend on currentUser
 
   const saveChanges = async () => {
     if (Object.keys(modifiedDates).length === 0) return;
-    if (!BACKEND_API_ROOT) {
-      // Check if the base URL is available
-      setError("API base URL is not configured. Cannot save data.");
-      setIsSaving(false);
-      return;
-    }
-    const token = getAuthAdminToken();
-    if (!token) {
-      setError(
-        "Admin authentication token not found. Please log in to save changes."
-      );
-      setIsSaving(false);
+    if (!currentUser) {
+      setError("Admin authentication required to save changes.");
       return;
     }
 
-    const payload = {
-      dates: Object.entries(modifiedDates).map(([dateString, info]) => ({
-        date: dateString,
-        isDeliveryEnabled: info.isDeliveryEnabled,
-      })),
-    };
+    const upsertData = Object.entries(modifiedDates).map(
+      ([dateString, info]) => ({
+        event_date: dateString,
+        is_delivery_enabled: info.is_delivery_enabled,
+        notes: info.notes || null, // Add notes if you implement UI for it
+        updated_by: currentUser.id, // Track which admin made the change
+      })
+    );
+
     setIsSaving(true);
     setError(null);
     setSuccessMessage(null);
 
     try {
-      const response = await axios.post<{
-        success: boolean;
-        message?: string;
-        data: OperationalDateDB[];
-      }>(`${OPERATIONAL_DATES_API_ENDPOINT}/batch`, payload, {
-        headers: {
-          // <-- ADD THIS
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        //withCredentials: true, // Keep this
-      });
+      // Using onConflict: 'event_date' ensures it updates if date exists, inserts if not.
+      const { data: savedData, error: upsertError } = await supabase
+        .from("delivery_schedule")
+        .upsert(upsertData, { onConflict: "event_date" })
+        .select(); // Important to .select() to get results back for UI update
 
-      if (response.data.success) {
-        setSuccessMessage(
-          response.data.message || "Delivery dates updated successfully!"
-        );
-        // Update fetchedDates with the saved data and clear modifications
-        const newFetchedFromSave: OperationalDatesState = {};
-        response.data.data.forEach((opDate) => {
-          const dateKey = format(new Date(opDate.date), "yyyy-MM-dd");
-          newFetchedFromSave[dateKey] = { ...opDate, date: dateKey };
+      if (upsertError) throw upsertError;
+
+      setSuccessMessage("Delivery dates updated successfully!");
+
+      // Update fetchedDates with the saved data and clear modifications
+      const newFetchedFromSave: FetchedDatesState = {};
+      if (savedData) {
+        savedData.forEach((item: any) => {
+          // 'any' because upsert result might be less strictly typed by default
+          const dbItem = item as DeliveryScheduleDB;
+          newFetchedFromSave[dbItem.event_date] = dbItem;
         });
-        setFetchedDates((prev) => ({ ...prev, ...newFetchedFromSave }));
-        setModifiedDates({}); // Clear modifications
-        // Optionally re-fetch for the current view to be absolutely sure
-        // const currentViewStart = startOfMonth(activeStartDate);
-        // const currentViewEnd = endOfMonth(activeStartDate);
-        // fetchOperationalDates(currentViewStart, currentViewEnd);
-      } else {
-        throw new Error(response.data.message || "Failed to save changes.");
       }
+      setFetchedDates((prev) => ({ ...prev, ...newFetchedFromSave }));
+      setModifiedDates({}); // Clear modifications
     } catch (err) {
-      console.error("Error saving operational dates:", err);
-      const message =
-        err instanceof Error
-          ? err.message
-          : "An unknown server error occurred.";
-      setError(`Failed to save changes: ${message}`);
+      console.error("Error saving delivery schedule:", err);
+      setError(`Failed to save changes: ${(err as Error).message}`);
     } finally {
       setIsSaving(false);
     }
   };
 
-  // --- Effects ---
+  // Effect to fetch data when activeStartDate changes or currentUser is available
   useEffect(() => {
-    const viewStart = startOfMonth(subMonths(activeStartDate, 1));
-    const viewEnd = endOfMonth(addMonths(activeStartDate, 1));
-    fetchOperationalDates(viewStart, viewEnd);
-  }, [fetchOperationalDates, activeStartDate]);
+    if (currentUser) {
+      // Only fetch if we have a user
+      // Fetch for current month and one month before/after for smoother navigation
+      const viewStart = startOfMonth(subMonths(activeStartDate, 1));
+      const viewEnd = endOfMonth(addMonths(activeStartDate, 1));
+      fetchDeliverySchedule(viewStart, viewEnd);
+    }
+  }, [fetchDeliverySchedule, activeStartDate, currentUser]);
 
-  // --- Event Handlers ---
-  const handleDateClick = (dateClicked: Date) => {
+  const handleDateClick = (dateClickedRaw: Date) => {
+    const dateClicked = startOfDay(dateClickedRaw); // Normalize to start of day
     const dateKey = format(dateClicked, "yyyy-MM-dd");
 
-    // Prevent modification of past dates
     if (isBefore(dateClicked, today)) {
+      // Prevent modification of past dates
       return;
     }
 
     setModifiedDates((prev) => {
       const newModified = { ...prev };
-      const currentFetchedDate = fetchedDates[dateKey];
-      const currentModifiedInfo = prev[dateKey];
+      const currentFetched = fetchedDates[dateKey];
+      const alreadyModified = prev[dateKey];
 
-      let originalStatus = currentFetchedDate?.isDeliveryEnabled;
-      if (
-        currentModifiedInfo &&
-        currentModifiedInfo.originalStatus !== undefined
-      ) {
-        originalStatus = currentModifiedInfo.originalStatus;
-      } else if (currentFetchedDate) {
-        originalStatus = currentFetchedDate.isDeliveryEnabled;
-      } else {
-        originalStatus = false;
-      }
+      // Determine the original status from DB (or default if not in DB)
+      const originalDbStatus = currentFetched?.is_delivery_enabled ?? false; // Default to false if not fetched
 
-      let newStatus: boolean;
-      if (currentModifiedInfo) {
-        newStatus = !currentModifiedInfo.isDeliveryEnabled;
-      } else if (currentFetchedDate) {
-        newStatus = !currentFetchedDate.isDeliveryEnabled;
-      } else {
-        newStatus = true;
-      }
+      // Determine current displayed status (considering modifications or fetched data)
+      const currentDisplayStatus = alreadyModified
+        ? alreadyModified.is_delivery_enabled
+        : originalDbStatus;
 
-      const dbStatus = currentFetchedDate?.isDeliveryEnabled ?? false;
-      if (newStatus === dbStatus) {
+      const newToggledStatus = !currentDisplayStatus;
+
+      if (newToggledStatus === (currentFetched?.is_delivery_enabled ?? false)) {
+        // If toggled status is same as what's in DB (or default for un-set dates), remove from modified
         delete newModified[dateKey];
       } else {
         newModified[dateKey] = {
-          isDeliveryEnabled: newStatus,
-          originalStatus: originalStatus,
+          is_delivery_enabled: newToggledStatus,
+          original_status: originalDbStatus,
+          // notes: alreadyModified?.notes || currentFetched?.notes || "" // Preserve notes if editing
         };
       }
       return newModified;
     });
-    setSuccessMessage(null);
+    setSuccessMessage(null); // Clear success message on new modification
+    setError(null); // Clear error message on new modification
   };
 
   const handleActiveStartDateChange = ({
@@ -262,64 +207,81 @@ const DeliveryDateManager: React.FC = () => {
     activeStartDate: Date | null;
   }) => {
     if (newActiveStartDate && isValid(newActiveStartDate)) {
-      const currentMonthStart = startOfMonth(activeStartDate);
-      const newMonthStart = startOfMonth(newActiveStartDate);
-
-      if (!isEqual(currentMonthStart, newMonthStart)) {
-        setActiveStartDate(newActiveStartDate);
-      } else {
-        setActiveStartDate(newActiveStartDate);
+      const normalizedNewActiveStart = startOfDay(newActiveStartDate);
+      // Check if the month or year has actually changed to avoid redundant fetches
+      if (
+        normalizedNewActiveStart.getMonth() !== activeStartDate.getMonth() ||
+        normalizedNewActiveStart.getFullYear() !== activeStartDate.getFullYear()
+      ) {
+        setActiveStartDate(normalizedNewActiveStart);
+      } else if (!isEqual(normalizedNewActiveStart, activeStartDate)) {
+        // Still update if it's a different day within the same month,
+        // although react-calendar might not trigger for this unless view changes.
+        setActiveStartDate(normalizedNewActiveStart);
       }
     }
   };
 
   const getTileClassName = ({
-    date,
+    date: tileDateRaw,
     view,
   }: {
     date: Date;
     view: string;
   }): string | null => {
     if (view !== "month") return null;
-
-    const dateKey = format(date, "yyyy-MM-dd");
-    const isPast = isBefore(date, today);
+    const tileDate = startOfDay(tileDateRaw); // Normalize
+    const dateKey = format(tileDate, "yyyy-MM-dd");
+    const isPast = isBefore(tileDate, today);
 
     let className = "calendar-tile";
     const modifiedInfo = modifiedDates[dateKey];
     const fetchedInfo = fetchedDates[dateKey];
 
     let isEnabled: boolean;
+    let originalStatusFromDbOrModified: boolean | undefined;
 
     if (modifiedInfo) {
-      isEnabled = modifiedInfo.isDeliveryEnabled;
+      isEnabled = modifiedInfo.is_delivery_enabled;
+      originalStatusFromDbOrModified = modifiedInfo.original_status;
       className += " modified";
     } else if (fetchedInfo) {
-      isEnabled = fetchedInfo.isDeliveryEnabled;
+      isEnabled = fetchedInfo.is_delivery_enabled;
+      originalStatusFromDbOrModified = fetchedInfo.is_delivery_enabled;
     } else {
-      isEnabled = false;
+      // Default for dates not in DB and not modified
+      isEnabled = false; // Assuming default is disabled
+      originalStatusFromDbOrModified = false;
     }
 
     if (isPast) {
-      className += " disabled-date";
-      if (fetchedInfo?.isDeliveryEnabled && !modifiedInfo) {
-        className += " enabled-date";
-      } else if (modifiedInfo?.isDeliveryEnabled) {
-        className += " enabled-date";
-      }
+      // For past dates, show their historical status, don't allow them to look like current disabled/enabled interactively
+      className +=
+        (originalStatusFromDbOrModified ? " enabled-date" : " disabled-date") +
+        " past-date";
     } else {
       className += isEnabled ? " enabled-date" : " disabled-date";
     }
 
-    if (isEqual(date, today)) {
+    if (isEqual(tileDate, today)) {
       className += " today-date";
     }
-
     return className;
   };
 
   const hasChanges = Object.keys(modifiedDates).length > 0;
 
+  // --- Render Logic ---
+  if (!currentUser && !error) {
+    // Show loading or prompt if user session isn't resolved yet (and no other error)
+    return <div className="loading-indicator">Authenticating admin...</div>;
+  }
+  if (error && !isLoading && !isSaving) {
+    // Show persistent error if not in loading/saving state
+    // If error is auth-related and currentUser is null, it might already be handled or could be more specific here
+  }
+
+  // JSX remains largely the same as your old code, using the new state variables and handlers
   return (
     <div className="card">
       <div className="card-body">
@@ -329,11 +291,11 @@ const DeliveryDateManager: React.FC = () => {
           dates cannot be changed.
         </p>
 
-        {isLoading && (
+        {isLoading && !isSaving && (
           <div className="loading-indicator">Loading calendar data...</div>
         )}
         {error && <div className="error-message">{error}</div>}
-        {successMessage && (
+        {successMessage && !error && (
           <div className="success-message">{successMessage}</div>
         )}
 
@@ -342,11 +304,11 @@ const DeliveryDateManager: React.FC = () => {
             onClickDay={handleDateClick}
             onActiveStartDateChange={handleActiveStartDateChange}
             activeStartDate={activeStartDate}
-            value={null}
+            value={null} // We manage selection state separately
             tileClassName={getTileClassName}
-            minDate={undefined}
-            next2Label={null}
-            prev2Label={null}
+            // minDate={today} // Optionally prevent navigating to past months entirely
+            next2Label={null} // Hide double month navigation
+            prev2Label={null} // Hide double month navigation
           />
         </div>
 

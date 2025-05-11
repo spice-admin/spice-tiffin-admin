@@ -1,93 +1,64 @@
+// src/components/management/AddonTable.tsx
 import React, {
   useState,
   useEffect,
   useImperativeHandle,
   forwardRef,
+  useCallback,
 } from "react";
 import Swal from "sweetalert2";
+import { supabase } from "../../lib/supabaseClient"; // Your Supabase client
+import type { Addon } from "../../types"; // Assuming types are in src/types
 
-// Define the structure of an Addon object based on controller/model
-interface Addon {
-  _id: string;
-  name: string;
-  price: number;
-  image: string; // Added image field (URL or path)
-  createdAt: string;
-  updatedAt: string; // Mongoose timestamps usually include this
-}
-
-// Define the handle interface for exposing methods via ref
 export interface AddonTableHandle {
   refetch: () => void;
 }
 
 export interface AddonTableProps {
-  onEdit: (addon: Addon) => void; // Function to call when Edit is clicked
+  onEdit: (addon: Addon) => void;
 }
 
 const AddonTable = forwardRef<AddonTableHandle, AddonTableProps>(
   ({ onEdit }, ref) => {
     const [addons, setAddons] = useState<Addon[]>([]);
-    const [loading, setLoading] = useState<boolean>(false);
+    const [loading, setLoading] = useState<boolean>(true);
 
-    // Access the public API base URL from environment variables
-    const API_BASE_URL = import.meta.env.PUBLIC_API_BASE_URL;
-
-    // Function to fetch addons from the API
-    const fetchAddons = async () => {
+    const fetchAddons = useCallback(async () => {
       setLoading(true);
       try {
-        // Endpoint confirmed by controller
-        const res = await fetch(`${API_BASE_URL}/addons`);
+        const { data, error } = await supabase
+          .from("addons")
+          .select("*") // Select all columns
+          .order("name", { ascending: true }); // Order by name
 
-        if (!res.ok) {
-          let errorMsg = `HTTP error! status: ${res.status}`;
-          try {
-            const errorData = await res.json();
-            errorMsg = errorData.message || errorMsg;
-          } catch (parseError) {
-            // Ignore if response isn't JSON
-          }
-          throw new Error(errorMsg);
-        }
+        if (error) throw error;
 
-        const data = await res.json();
-
-        // Structure confirmed by controller: { success, count, data }
-        if (data.success && Array.isArray(data.data)) {
-          setAddons(data.data);
-        } else {
-          console.warn(
-            "⚠️ Unexpected response structure fetching addons:",
-            data
-          );
-          setAddons([]);
-        }
-      } catch (err) {
-        console.error("❌ Fetch addons error:", err);
+        setAddons(data || []);
+      } catch (err: any) {
+        console.error("Fetch addons error:", err);
         setAddons([]);
-        // Consider showing a user-facing error notification here
-        Swal.fire("Error", `Failed to fetch addons: ${err.message}`, "error");
+        Swal.fire(
+          "Error",
+          `Failed to fetch addons: ${err.message || "Unknown error"}`,
+          "error"
+        );
       } finally {
         setLoading(false);
       }
-    };
-
-    // Fetch addons when the component mounts
-    useEffect(() => {
-      fetchAddons();
     }, []);
 
-    // Expose the refetch function to parent components
+    useEffect(() => {
+      fetchAddons();
+    }, [fetchAddons]);
+
     useImperativeHandle(ref, () => ({
       refetch: fetchAddons,
     }));
 
-    // Function to handle addon deletion
-    const handleDelete = async (id: string) => {
-      const confirm = await Swal.fire({
+    const handleDelete = async (id: string, addonName: string) => {
+      const result = await Swal.fire({
         title: "Are you sure?",
-        text: "This addon will be deleted permanently.",
+        text: `You are about to delete "${addonName}". This action is permanent.`,
         icon: "warning",
         showCancelButton: true,
         confirmButtonColor: "#dc3545",
@@ -95,112 +66,125 @@ const AddonTable = forwardRef<AddonTableHandle, AddonTableProps>(
         confirmButtonText: "Yes, delete it!",
       });
 
-      if (!confirm.isConfirmed) return;
+      if (!result.isConfirmed) return;
 
       try {
-        // Endpoint and method confirmed by controller
-        const res = await fetch(`${API_BASE_URL}/addons/${id}`, {
-          method: "DELETE",
-        });
+        setLoading(true); // Indicate loading for delete action
+        const { error } = await supabase.from("addons").delete().eq("id", id);
 
-        const data = await res.json();
+        if (error) throw error;
 
-        // Response structure confirmed by controller: { success, message }
-        if (res.ok && data.success) {
-          Swal.fire(
-            "Deleted!",
-            data.message || "Addon deleted successfully.",
-            "success"
-          );
-          setAddons((prev) => prev.filter((addon) => addon._id !== id));
-          // Note: If image deletion is handled server-side (as per TODO in controller),
-          // no extra client-side action needed here for the image file itself.
-        } else {
-          throw new Error(data.message || "Delete failed");
-        }
-      } catch (error) {
-        console.error("❌ Delete Addon Error:", error);
-        Swal.fire("Error", `Failed to delete addon: ${error.message}`, "error");
+        Swal.fire(
+          "Deleted!",
+          `Addon "${addonName}" has been deleted.`,
+          "success"
+        );
+        // Refetch or filter locally
+        setAddons((prev) => prev.filter((addon) => addon.id !== id));
+      } catch (error: any) {
+        console.error("Delete Addon Error:", error);
+        Swal.fire(
+          "Error",
+          `Failed to delete addon: ${error.message || "Unknown error"}`,
+          "error"
+        );
+      } finally {
+        setLoading(false);
       }
     };
 
-    // Function to format currency
-    const formatCurrency = (value: number) => {
+    const formatCurrency = (value: number | null | undefined) => {
+      if (value === null || value === undefined) return "N/A";
       return new Intl.NumberFormat("en-US", {
-        // Using INR as example
         style: "currency",
-        currency: "CAD",
+        currency: "CAD", // Change as needed
       }).format(value);
     };
 
+    const formatDate = (dateString?: string | null) => {
+      if (!dateString) return "N/A";
+      try {
+        return new Date(dateString).toLocaleDateString(undefined, {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          // hour: '2-digit', minute: '2-digit' // Optionally add time
+        });
+      } catch (e) {
+        return "Invalid Date";
+      }
+    };
+
+    if (loading && addons.length === 0) {
+      // Show loading only on initial fetch
+      return <p className="text-center py-4">🔄 Loading addons...</p>;
+    }
+    if (!loading && addons.length === 0) {
+      return (
+        <p className="text-center py-4">
+          🚫 No addons found. Click "Add Addon" to create one.
+        </p>
+      );
+    }
+
     return (
       <div className="table-responsive">
-        {loading ? (
-          <p className="text-center py-4">🔄 Loading addons...</p>
-        ) : addons.length === 0 ? (
-          <p className="text-center py-4">🚫 No addons found.</p>
-        ) : (
-          <table className="table table-hover align-middle mb-0">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Image</th>
-                <th>Addon Name</th>
-                <th>Price</th>
-                <th>Created At</th>
-                <th className="text-end">Actions</th>
+        <table className="table table-hover align-middle mb-0">
+          <thead className="table-light">
+            <tr>
+              <th>#</th>
+              <th>Image</th>
+              <th>Addon Name</th>
+              <th>Price</th>
+              <th>Created At</th>
+              <th className="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {addons.map((addon, index) => (
+              <tr key={addon.id}>
+                <td>{index + 1}</td>
+                <td>
+                  {addon.image_url ? (
+                    <img
+                      src={addon.image_url}
+                      alt={addon.name}
+                      style={{
+                        height: "40px",
+                        width: "auto",
+                        objectFit: "cover",
+                      }}
+                      onError={(e) => (e.currentTarget.style.display = "none")}
+                    />
+                  ) : (
+                    <span className="text-muted fst-italic">No image</span>
+                  )}
+                </td>
+                <td>{addon.name || "N/A"}</td>
+                <td>{formatCurrency(addon.price)}</td>
+                <td>{formatDate(addon.created_at)}</td>
+                <td className="text-end">
+                  <button
+                    className="btn btn-sm btn-outline-primary me-2"
+                    title="Edit addon"
+                    onClick={() => onEdit(addon)}
+                    disabled={loading} // Disable if any table-level loading is happening
+                  >
+                    <i className="las la-pen" /> Edit
+                  </button>
+                  <button
+                    className="btn btn-sm btn-outline-danger"
+                    title="Delete addon"
+                    onClick={() => handleDelete(addon.id, addon.name)}
+                    disabled={loading} // Disable if any table-level loading is happening
+                  >
+                    <i className="las la-trash-alt" /> Delete
+                  </button>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {addons.map((addon, index) => (
-                <tr key={addon._id}>
-                  <td>{index + 1}</td>
-                  <td>
-                    {addon.image ? (
-                      <img
-                        src={addon.image}
-                        alt={addon.name}
-                        style={{
-                          height: "40px",
-                          width: "auto",
-                          objectFit: "cover",
-                        }}
-                        onError={(e) =>
-                          (e.currentTarget.style.display = "none")
-                        } // Hide on error
-                      />
-                    ) : (
-                      <span className="text-muted fst-italic">No image</span>
-                    )}
-                  </td>
-                  <td>{addon.name || "Untitled Addon"}</td>
-                  <td>{formatCurrency(addon.price)}</td>
-                  <td>{new Date(addon.createdAt).toLocaleString()}</td>
-                  <td className="text-end">
-                    {/* --- Placeholder for Edit Button --- */}
-                    {/* This button would likely trigger a function passed via props
-                        from AddonManagerWrapper to open the ManageAddonModal */}
-                    <button
-                      className="btn btn-sm btn-outline-primary me-2"
-                      title="Edit addon"
-                      onClick={() => onEdit(addon)} // Call the onEdit prop
-                    >
-                      <i className="las la-pen" /> Edit
-                    </button>
-                    {/* ---------------------------------- */}
-                    <button
-                      className="btn btn-sm btn-outline-danger"
-                      title="Delete addon"
-                      onClick={() => handleDelete(addon._id)}
-                    >
-                      <i className="las la-trash-alt" /> Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+            ))}
+          </tbody>
+        </table>
       </div>
     );
   }

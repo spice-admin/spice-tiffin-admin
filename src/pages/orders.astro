@@ -54,3 +54,209 @@ const pageTitle = "Orders";
     </div>
   </div>
 </Layout>
+
+<style>
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050; /* Ensure it's above other content */
+    padding: 1rem;
+  }
+
+  .modal-content {
+    background-color: #fff;
+    padding: 1.5rem 2rem; /* 24px 32px */
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    width: 100%;
+    max-width: 700px; /* Adjust as needed */
+    max-height: 90vh; /* Max height */
+    overflow-y: auto; /* Allow scrolling for content */
+    position: relative; /* For absolute positioning of close button */
+    animation: modal-fade-in 0.3s ease-out;
+  }
+
+  @keyframes modal-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .modal-close-button {
+    position: absolute;
+    top: 1rem; /* 16px */
+    right: 1rem; /* 16px */
+    background: none;
+    border: none;
+    font-size: 1.5rem; /* 24px */
+    color: #6b7280; /* gray-500 */
+    cursor: pointer;
+    padding: 0.25rem;
+    line-height: 1;
+  }
+  .modal-close-button:hover {
+    color: #1f2937; /* gray-800 */
+  }
+
+  .modal-title {
+    font-size: 1.5rem; /* 24px */
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+  }
+  .modal-title .icon {
+    margin-right: 0.75rem;
+    color: #4b5563; /* gray-600 */
+  }
+
+  .modal-order-id {
+    font-size: 0.875rem; /* 14px */
+    color: #6b7280;
+    margin-bottom: 1.5rem; /* 24px */
+    word-break: break-all;
+  }
+
+  .modal-section {
+    margin-bottom: 1.5rem; /* 24px */
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e5e7eb; /* gray-200 */
+  }
+  .modal-section:last-child {
+    margin-bottom: 0;
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .section-title {
+    font-size: 1.125rem; /* 18px */
+    font-weight: 600;
+    color: #374151; /* gray-700 */
+    margin-bottom: 0.75rem; /* 12px */
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid #f3f4f6; /* gray-100 */
+  }
+
+  .detail-item {
+    display: flex;
+    flex-wrap: wrap; /* Allow wrapping for long values */
+    padding: 0.3rem 0; /* 8px 0 */
+    font-size: 0.95rem; /* ~15px */
+  }
+
+  .detail-label {
+    font-weight: 500;
+    color: #4b5563; /* gray-600 */
+    min-width: 180px; /* Adjust for alignment, or use grid */
+    margin-right: 0.5rem; /* 8px */
+    display: inline-flex;
+    align-items: center;
+  }
+  .detail-label .icon {
+    margin-right: 0.5rem; /* Space between icon and label text */
+    color: #9ca3af; /* gray-400 */
+    font-size: 1.1em; /* Make icon slightly larger than text */
+  }
+
+  .detail-value {
+    color: #1f2937; /* gray-800 */
+    word-break: break-word; /* Prevent long strings from breaking layout */
+  }
+  .detail-value .text-muted {
+    color: #9ca3af !important; /* Ensure muted text for N/A is visible */
+    font-style: italic;
+  }
+
+  .timestamps .detail-item {
+    font-size: 0.8rem;
+    color: #6b7280;
+  }
+  .timestamps .detail-label {
+    min-width: 120px;
+  }
+
+  /* Badge styles for OrderStatusDisplayBadge */
+  /* Define these based on your admin panel's theme, e.g., using Bootstrap variable names if applicable */
+  .order-status-badge {
+    padding: 0.25em 0.6em;
+    font-size: 0.85em;
+    font-weight: 500;
+    border-radius: 0.375rem; /* rounded-md */
+    display: inline-flex;
+    align-items: center;
+    text-transform: capitalize;
+  }
+  .order-status-badge .icon {
+    margin-right: 0.3em;
+  }
+
+  .badge-status-default {
+    background-color: #e5e7eb;
+    color: #374151;
+  }
+  .badge-status-confirmed {
+    background-color: #cffafe;
+    color: #0891b2;
+    border: 1px solid #67e8f9;
+  } /* Light Cyan */
+  .badge-status-processing {
+    background-color: #dbeafe;
+    color: #2563eb;
+    border: 1px solid #93c5fd;
+  } /* Light Blue */
+  .badge-status-delivery {
+    background-color: #e0e7ff;
+    color: #4f46e5;
+    border: 1px solid #a5b4fc;
+  } /* Light Indigo */
+  .badge-status-delivered {
+    background-color: #dcfce7;
+    color: #16a34a;
+    border: 1px solid #86efac;
+  } /* Light Green */
+  .badge-status-cancelled {
+    background-color: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fca5a5;
+  } /* Light Red */
+  .badge-status-hold {
+    background-color: #fef3c7;
+    color: #d97706;
+    border: 1px solid #fde68a;
+  } /* Light Amber */
+
+  /* Mobile responsiveness for modal content */
+  @media (max-width: 600px) {
+    .modal-content {
+      padding: 1rem 1.5rem;
+      max-height: 85vh;
+    }
+    .modal-title {
+      font-size: 1.25rem;
+    }
+    .section-title {
+      font-size: 1.05rem;
+    }
+    .detail-item {
+      flex-direction: column; /* Stack label and value on small screens */
+      align-items: flex-start;
+    }
+    .detail-label {
+      min-width: auto;
+      margin-bottom: 0.25rem;
+    }
+  }
+</style>

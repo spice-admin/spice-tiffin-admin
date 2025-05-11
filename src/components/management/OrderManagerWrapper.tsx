@@ -1,95 +1,155 @@
 // src/components/management/OrderManagerWrapper.tsx
 import React, { useState, useEffect, useCallback } from "react";
+import { supabase } from "../../lib/supabaseClient"; // Adjust path
 import {
-  DeliveryStatus,
-  type IOrderAdminFE,
+  type IAdminOrder,
   type IOrderFilters,
   type IPaginationData,
-  OrderStatus,
-} from "../../types";
-import { getAllOrdersAdminApi } from "../../services/order.service";
+  AdminOrderStatus,
+} from "../../types"; // Use new types
 import OrderTable from "./OrderTable";
-// Import pagination and filter components if you create them separately
+import OrderDetailModal from "./OrderDetailModal";
 
-const ITEMS_PER_PAGE = 10; // Default items per page
+const ITEMS_PER_PAGE = 10;
 
 const OrderManagerWrapper: React.FC = () => {
-  const [orders, setOrders] = useState<IOrderAdminFE[]>([]);
+  const [orders, setOrders] = useState<IAdminOrder[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // --- State for Pagination ---
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(0);
   const [totalOrders, setTotalOrders] = useState<number>(0);
   const [limit, setLimit] = useState<number>(ITEMS_PER_PAGE);
 
-  // --- State for Filters ---
   const [filters, setFilters] = useState<IOrderFilters>({
-    status: "", // Default to all order statuses
-    deliveryStatus: "", // Default to all delivery statuses
+    status: "",
     search: "",
-    sortBy: "createdAt_desc", // Default sort
+    sortBy: "order_date_desc", // Default sort: newest orders first
   });
+
+  const [selectedOrder, setSelectedOrder] = useState<IAdminOrder | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
   const fetchOrders = useCallback(
     async (pageToFetch: number, currentFilters: IOrderFilters) => {
       setIsLoading(true);
       setError(null);
       try {
-        console.log(
-          `[OrderManagerWrapper] Fetching orders for page: ${pageToFetch}, filters:`,
-          currentFilters
-        );
-        // Pass page, limit, and filters to the API service
-        const result = await getAllOrdersAdminApi(
-          pageToFetch,
-          limit,
-          currentFilters
+        const offset = (pageToFetch - 1) * limit;
+
+        let query = supabase.from("orders").select(
+          `
+            id, user_id, user_full_name, user_email, user_phone,
+            package_id, package_name, package_type, package_days, package_price,
+            delivery_address, delivery_city, delivery_postal_code, delivery_current_location,
+            stripe_payment_id, stripe_customer_id,
+            order_status, order_date, delivery_start_date, delivery_end_date,
+            created_at, updated_at
+          `,
+          { count: "exact" }
         );
 
-        // Correctly access nested data based on backend response structure
-        if (
-          result.success &&
-          result.data &&
-          result.data.orders &&
-          result.data.pagination
-        ) {
-          console.log(
-            "[OrderManagerWrapper] Orders fetched successfully:",
-            result.data
+        // --- Filtering ---
+        if (currentFilters.status) {
+          query = query.eq("order_status", currentFilters.status);
+        }
+        if (currentFilters.search) {
+          const searchTerm = `%${currentFilters.search}%`;
+          query = query.or(
+            `id.ilike.${searchTerm},user_full_name.ilike.${searchTerm},user_email.ilike.${searchTerm},package_name.ilike.${searchTerm},stripe_payment_id.ilike.${searchTerm}`
           );
-          setOrders(result.data.orders);
-          // Update pagination state from API response
-          setCurrentPage(result.data.pagination.currentPage);
-          setTotalPages(result.data.pagination.totalPages);
-          setTotalOrders(result.data.pagination.totalOrders);
-          // limit is already in state, but you could update it if backend dictates it:
-          // setLimit(result.data.pagination.limit);
+        }
+
+        // --- CORRECTED Sorting ---
+        let sortColumn: keyof IAdminOrder = "order_date"; // Default column
+        let sortAscending = false; // Default to descending for order_date
+
+        if (currentFilters.sortBy) {
+          const parts = currentFilters.sortBy.split("_");
+          const direction = parts.pop(); // Removes and returns 'asc' or 'desc'
+          const column = parts.join("_"); // Joins the remaining parts, e.g., "order_date" or "package_price"
+
+          // Basic validation that column and direction were extracted
+          if (column && (direction === "asc" || direction === "desc")) {
+            // A whitelist of sortable columns is safer to prevent errors if sortBy string is unexpected
+            const allowedSortColumns: (keyof IAdminOrder)[] = [
+              "order_date",
+              "package_price",
+              "user_full_name" /* add others as needed */,
+            ];
+            if (allowedSortColumns.includes(column as keyof IAdminOrder)) {
+              sortColumn = column as keyof IAdminOrder;
+              sortAscending = direction === "asc";
+            } else {
+              console.warn(
+                `[OrderManagerWrapper] Invalid sort column detected: ${column}. Defaulting to order_date.`
+              );
+              // Defaults are already set (order_date, descending)
+            }
+          } else {
+            console.warn(
+              `[OrderManagerWrapper] Malformed sortBy string: ${currentFilters.sortBy}. Defaulting to order_date.`
+            );
+          }
+        }
+
+        query = query.order(sortColumn, { ascending: sortAscending });
+        // --- End of Corrected Sorting ---
+
+        // --- Pagination ---
+        query = query.range(offset, offset + limit - 1);
+
+        const { data, error: fetchError, count } = await query;
+
+        console.log(
+          "[OrderManagerWrapper] Supabase raw response - data:",
+          data
+        );
+        console.log(
+          "[OrderManagerWrapper] Supabase raw response - error object:",
+          fetchError
+        );
+        console.log(
+          "[OrderManagerWrapper] Supabase raw response - count:",
+          count
+        );
+
+        if (fetchError) throw fetchError;
+
+        if (data) {
+          setOrders(data as IAdminOrder[]);
+          setTotalOrders(count || 0);
+          setTotalPages(Math.ceil((count || 0) / limit));
+          setCurrentPage(pageToFetch);
         } else {
-          throw new Error(
-            result.message || "Failed to fetch orders or invalid data format."
-          );
+          setOrders([]);
+          setTotalOrders(0);
+          setTotalPages(0);
         }
       } catch (err) {
         console.error("[OrderManagerWrapper] Error fetching orders:", err);
-        setError((err as Error).message);
-        setOrders([]); // Clear orders on error
+        // The actual error object `err` might contain the specific PostgreSQL error like "column orders.order does not exist"
+        // If err.message already contains it, great. Otherwise, you might need to inspect err further if it's a Supabase specific error object.
+        setError(
+          (err as any).message ||
+            "An unknown error occurred while fetching orders."
+        );
+        setOrders([]);
       } finally {
         setIsLoading(false);
-        console.log("[OrderManagerWrapper] Finished fetching orders attempt.");
       }
     },
     [limit]
-  ); // limit is a dependency for the service call
+  );
 
   useEffect(() => {
     fetchOrders(currentPage, filters);
-  }, [fetchOrders, currentPage, filters]); // Re-fetch when page or filters change
+  }, [fetchOrders, currentPage, filters]);
 
   const handlePageChange = (newPage: number) => {
-    if (newPage >= 1 && newPage <= totalPages) {
-      setCurrentPage(newPage); // This will trigger useEffect to re-fetch
+    if (newPage >= 1 && newPage <= totalPages && newPage !== currentPage) {
+      setCurrentPage(newPage);
     }
   };
 
@@ -101,14 +161,23 @@ const OrderManagerWrapper: React.FC = () => {
     setCurrentPage(1); // Reset to page 1 when filters change
   };
 
-  const handleSearchSubmit = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    setCurrentPage(1); // Reset to page 1 on new search
-    fetchOrders(1, filters); // Explicitly fetch, as filters object itself might not change reference if only sub-property changes
+  // No need for handleSearchSubmit if filter change already triggers useEffect
+  // const handleSearchSubmit = (e?: React.FormEvent) => { ... }
+
+  // Function to be passed to OrderTable for refreshing data (e.g., after an update)
+  const refreshOrders = () => {
+    fetchOrders(currentPage, filters);
   };
 
-  // TODO: Implement UI for pagination controls (buttons, page numbers)
-  // TODO: Implement UI for filter controls (dropdowns for status, input for search)
+  const handleViewOrderDetails = (order: IAdminOrder) => {
+    setSelectedOrder(order);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedOrder(null); // Important to clear selected order
+  };
 
   return (
     <div className="card">
@@ -117,15 +186,21 @@ const OrderManagerWrapper: React.FC = () => {
           <div className="col">
             <h4 className="card-title">All Customer Orders</h4>
           </div>
-          {/* Placeholder for filter controls */}
           <div className="col-auto">
-            {/* Example Search */}
-            <form onSubmit={handleSearchSubmit} className="d-inline-flex me-2">
+            {" "}
+            {/* Filter Controls Area */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                fetchOrders(1, filters);
+              }}
+              className="d-inline-flex me-2"
+            >
               <input
                 type="text"
                 name="search"
                 className="form-control form-control-sm"
-                placeholder="Search Order#, Package..."
+                placeholder="Search..."
                 value={filters.search}
                 onChange={handleFilterChange}
               />
@@ -133,7 +208,6 @@ const OrderManagerWrapper: React.FC = () => {
                 Search
               </button>
             </form>
-            {/* Example Status Filter */}
             <select
               name="status"
               className="form-select form-select-sm d-inline-block"
@@ -141,26 +215,30 @@ const OrderManagerWrapper: React.FC = () => {
               value={filters.status}
               onChange={handleFilterChange}
             >
-              <option value="">All Order Statuses</option>
-              {Object.values(OrderStatus).map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
+              <option value="">All Statuses</option>
+              {Object.entries(AdminOrderStatus).map(
+                (
+                  [key, val] // Use AdminOrderStatus
+                ) => (
+                  <option key={val} value={val}>
+                    {key.replace(/_/g, " ")} {/* Format enum key for display */}
+                  </option>
+                )
+              )}
             </select>
+            {/* Add SortBy dropdown if needed */}
             <select
-              name="deliveryStatus"
+              name="sortBy"
               className="form-select form-select-sm d-inline-block ms-2"
               style={{ width: "auto" }}
-              value={filters.deliveryStatus}
+              value={filters.sortBy}
               onChange={handleFilterChange}
             >
-              <option value="">All Delivery Statuses</option>
-              {Object.values(DeliveryStatus).map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
+              <option value="order_date_desc">Newest First (Order Date)</option>
+              <option value="order_date_asc">Oldest First (Order Date)</option>
+              <option value="package_price_desc">Price: High to Low</option>
+              <option value="package_price_asc">Price: Low to High</option>
+              {/* Add more sort options as needed */}
             </select>
           </div>
         </div>
@@ -170,7 +248,7 @@ const OrderManagerWrapper: React.FC = () => {
           <div className="alert alert-danger" role="alert">
             Error fetching orders: {error}
             <button
-              onClick={() => fetchOrders(currentPage, filters)}
+              onClick={refreshOrders}
               className="btn btn-sm btn-danger ms-2"
             >
               Retry
@@ -178,13 +256,18 @@ const OrderManagerWrapper: React.FC = () => {
           </div>
         )}
 
-        <OrderTable orders={orders} isLoading={isLoading} />
+        <OrderTable
+          orders={orders}
+          isLoading={isLoading}
+          refreshOrders={refreshOrders}
+          onViewDetails={handleViewOrderDetails} // <-- PASS HANDLER TO TABLE
+        />
 
-        {/* Basic Pagination Example */}
         {!isLoading && totalOrders > 0 && (
           <div className="d-flex justify-content-between align-items-center mt-3">
-            <span className="text-muted fs-sm">
-              Showing {orders.length} of {totalOrders} orders
+            <span className="text-muted" style={{ fontSize: "0.875rem" }}>
+              Showing {orders.length} of {totalOrders} orders. Page{" "}
+              {currentPage} of {totalPages}.
             </span>
             <nav>
               <ul className="pagination pagination-sm mb-0">
@@ -198,15 +281,39 @@ const OrderManagerWrapper: React.FC = () => {
                     Previous
                   </button>
                 </li>
-                {/* Simple page number display - can be enhanced */}
-                <li className="page-item active" aria-current="page">
-                  <span className="page-link">
-                    {currentPage} / {totalPages}
-                  </span>
-                </li>
+                {/* Dynamic Page Numbers (Simplified) */}
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (page) =>
+                    page === currentPage ||
+                    Math.abs(page - currentPage) < 2 ||
+                    page === 1 ||
+                    page === totalPages ? (
+                      <li
+                        key={page}
+                        className={`page-item ${
+                          page === currentPage ? "active" : ""
+                        }`}
+                      >
+                        <button
+                          className="page-link"
+                          onClick={() => handlePageChange(page)}
+                        >
+                          {page}
+                        </button>
+                      </li>
+                    ) : Math.abs(page - currentPage) === 2 &&
+                      page !== 1 &&
+                      page !== totalPages ? (
+                      <li key={page} className="page-item disabled">
+                        <span className="page-link">...</span>
+                      </li>
+                    ) : null
+                )}
                 <li
                   className={`page-item ${
-                    currentPage === totalPages ? "disabled" : ""
+                    currentPage === totalPages || totalPages === 0
+                      ? "disabled"
+                      : ""
                   }`}
                 >
                   <button
@@ -221,6 +328,11 @@ const OrderManagerWrapper: React.FC = () => {
           </div>
         )}
       </div>
+      <OrderDetailModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        order={selectedOrder}
+      />
     </div>
   );
 };

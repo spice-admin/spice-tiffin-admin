@@ -444,3 +444,60 @@ export interface IDeliveryDateSettingFE {
   // createdAt?: string;
   // updatedAt?: string;
 }
+
+export enum AdminOrderStatus {
+  PENDING_CONFIRMATION = "pending_confirmation", // Initial status if any manual check needed
+  CONFIRMED = "confirmed", // Payment successful, order accepted
+  PROCESSING = "processing", // Kitchen is preparing
+  OUT_FOR_DELIVERY = "out_for_delivery",
+  DELIVERED = "delivered",
+  CANCELLED = "cancelled",
+  ON_HOLD = "on_hold",
+  // Add any other statuses you use
+}
+
+export interface IAdminOrder {
+  id: string; // UUID from Supabase
+  user_id?: string | null;
+  user_full_name?: string | null;
+  user_email?: string | null;
+  user_phone?: string | null;
+
+  package_id?: string | null;
+  package_name?: string | null;
+  package_type?: string | null; // e.g., 'daily', 'weekly'
+  package_days?: number | null;
+  package_price: number;
+
+  delivery_address?: string | null;
+  delivery_city?: string | null;
+  delivery_postal_code?: string | null;
+  delivery_current_location?: string | null; // "lat,lng"
+
+  stripe_payment_id?: string | null;
+  stripe_customer_id?: string | null;
+
+  order_status: AdminOrderStatus | string; // Use the enum or allow string for flexibility
+  order_date: string; // TIMESTAMPTZ as string
+  delivery_start_date?: string | null; // DATE as string "yyyy-MM-dd"
+  delivery_end_date?: string | null; // DATE as string "yyyy-MM-dd"
+
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Addon {
+  id: string; // UUID from Supabase
+  name: string;
+  price: number;
+  image_url?: string | null; // Corresponds to image_url column
+  created_at: string; // Supabase TIMESTAMPTZ
+  updated_at: string; // Supabase TIMESTAMPTZ
+}
+
+// For the form in the modal
+export interface AddonFormData {
+  name: string;
+  price: number | ""; // Modal might have empty string initially for price
+  image_url?: string | null;
+}
