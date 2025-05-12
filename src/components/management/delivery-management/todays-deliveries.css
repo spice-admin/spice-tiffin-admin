@@ -1,0 +1,125 @@
+.todays-deliveries-wrapper {
+  padding: 24px;
+  background-color: #f0f4f8;
+  min-height: 100vh;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.reset-filter-btn {
+  margin-top: 8px;
+  padding: 8px 16px;
+  background-color: #3498db;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.counter-section {
+  overflow-x: auto;
+  padding-bottom: 12px;
+  margin-bottom: 24px;
+}
+
+.counter-grid {
+  display: flex;
+  gap: 16px;
+  padding: 8px;
+  flex-wrap: nowrap;
+}
+
+.counter-card {
+  background-color: #3498db;
+  color: #fff;
+  padding: 16px;
+  border-radius: 12px;
+  min-width: 150px;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.counter-card.selected {
+  background-color: #2ecc71;
+}
+
+.counter-card:hover {
+  background-color: #2980b9;
+}
+
+.table-section {
+  overflow-x: auto;
+}
+
+.delivery-table {
+  width: 100%;
+  background-color: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.delivery-table th,
+.delivery-table td {
+  padding: 12px;
+  border-bottom: 1px solid #ddd;
+}
+
+.delivery-table th {
+  background-color: #3498db;
+  color: #fff;
+}
+
+.no-data {
+  text-align: center;
+  padding: 16px;
+  color: #777;
+}
+
+.todays-deliveries-wrapper {
+  padding: 24px;
+  background-color: #f0f4f8;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.search-input {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  width: 250px;
+}
+
+.table-section {
+  overflow-x: auto;
+}
+
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+  gap: 12px;
+}
+
+.counter-grid {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.counter-card {
+  padding: 16px;
+  background-color: #3498db;
+  color: #fff;
+  cursor: pointer;
+}
+

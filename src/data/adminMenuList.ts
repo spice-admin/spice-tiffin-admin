@@ -50,6 +50,7 @@ export const menu = [
       { title: "Delivery Dates", href: "/delivery-dates", icon: CalendarDays },
       { title: "Routes", href: "/delivery-management", icon: Truck },
       { title: "Cities", href: "/cities", icon: Building2 },
+      { title: "Today's Deliveries", href: "/daily-delivery", icon: Building2 },
     ],
   },
   // {

@@ -1,0 +1,57 @@
+---
+// src/pages/orders.astro
+import Layout from "../layouts/Layout.astro";
+import ProtectDashboard from "../components/auth/ProtectDashboard";
+import Leftbar from "../components/dashboard/Leftbar.astro";
+import Topbar from "../components/dashboard/Topbar.astro";
+import PageTitle from "../components/dashboard/PageTitle.astro";
+import OrderManagerWrapper from "@components/management/order-management/OrderManagerWrapper";
+import OptimizedRoutesComp from "@components/management/delivery-management/OptimizedRoutesComp";
+
+const pageTitle = "Optimized Routes";
+---
+
+<Layout title={pageTitle}>
+  {/* Authentication Wrapper */}
+  <ProtectDashboard client:only="react" />
+
+  {/* Dashboard Layout Components */}
+  <Topbar title={pageTitle} />
+  <Leftbar />
+  <PageTitle title={pageTitle} activePage="Optimized Routes" />
+
+  {/* Main Content Area */}
+  <div class="page-wrapper">
+    <div class="page-content">
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-lg-12">
+            {/* Render the React component for orders */}
+            <OptimizedRoutesComp client:load />
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <footer class="footer text-center text-sm-start d-print-none">
+        <div class="container-fluid">
+          <div class="row">
+            <div class="col-12 px-0">
+              <div class="card mb-0 border-0 rounded-bottom-0">
+                <div class="card-body">
+                  <p class="text-muted mb-0">
+                    © {new Date().getFullYear()}
+                    Your Company Name {/* TODO: Update Company Name */}
+                    <span class="float-end d-none d-sm-inline-block">
+                      Design by <strong>IGNITAX</strong>
+                    </span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </div>
+</Layout>
