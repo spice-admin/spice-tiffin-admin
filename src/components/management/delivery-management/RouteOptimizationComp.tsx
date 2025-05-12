@@ -48,9 +48,16 @@ const RouteOptimizationComp: React.FC = () => {
   /**
    * Fetch Assigned Deliveries for Selected Driver (Today's Date Only)
    */
+  const getLocalDate = () => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0); // Reset to start of the day in local timezone
+    return now.toISOString().split("T")[0];
+  };
+
   const fetchAssignedOrders = async (driverId: string) => {
     try {
-      const currentDate = new Date().toISOString().split("T")[0];
+      const currentDate = getLocalDate();
+      console.log("Current Local Date:", currentDate);
 
       const { data, error } = await supabase
         .from("assigned_deliveries")
@@ -60,7 +67,7 @@ const RouteOptimizationComp: React.FC = () => {
 
       if (error) throw error;
 
-      if (data.length === 0) {
+      if (!data || data.length === 0) {
         setAssignedOrders([]);
         return;
       }
