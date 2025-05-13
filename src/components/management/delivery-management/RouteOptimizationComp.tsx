@@ -50,10 +50,20 @@ const RouteOptimizationComp: React.FC = () => {
    */
   const getLocalDate = () => {
     const now = new Date();
-    now.setHours(0, 0, 0, 0); // Reset to start of the day in local timezone
-    return now.toISOString().split("T")[0];
+    // Adjust for local timezone offset
+    const timezoneOffset = now.getTimezoneOffset() * 60000;
+    const localISODate = new Date(now.getTime() - timezoneOffset)
+      .toISOString()
+      .split("T")[0];
+    return localISODate;
   };
 
+  /**
+   * Fetch Assigned Deliveries for Selected Driver (Today's Date Only)
+   */
+  /**
+   * Fetch Assigned Deliveries for Selected Driver (Today's Date Only)
+   */
   const fetchAssignedOrders = async (driverId: string) => {
     try {
       const currentDate = getLocalDate();
@@ -65,14 +75,29 @@ const RouteOptimizationComp: React.FC = () => {
         .eq("driver_id", driverId)
         .eq("delivery_date", currentDate);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching assigned deliveries:", error);
+        console.error("Error details:", JSON.stringify(error, null, 2));
+        throw new Error("Failed to fetch assigned deliveries.");
+      }
+
+      console.log("Assigned Deliveries Data:", data);
 
       if (!data || data.length === 0) {
+        console.log("No assigned deliveries for today.");
         setAssignedOrders([]);
         return;
       }
 
       const orderIds = data[0].order_ids;
+
+      if (!orderIds || orderIds.length === 0) {
+        console.log("No orders found for the assigned deliveries.");
+        setAssignedOrders([]);
+        return;
+      }
+
+      console.log("Order IDs to fetch:", orderIds);
 
       const { data: orders, error: ordersError } = await supabase
         .from("orders")
@@ -81,11 +106,22 @@ const RouteOptimizationComp: React.FC = () => {
         )
         .in("id", orderIds);
 
-      if (ordersError) throw ordersError;
+      if (ordersError) {
+        console.error("Error fetching orders:", ordersError);
+        console.error(
+          "Orders Error Details:",
+          JSON.stringify(ordersError, null, 2)
+        );
+        throw new Error("Failed to fetch orders.");
+      }
+
+      console.log("Fetched Orders:", orders);
 
       setAssignedOrders(orders || []);
     } catch (err) {
-      console.error("Error fetching assigned orders:", err);
+      console.error("Error fetching assigned orders:", err.message);
+      console.error("Error stack:", err.stack);
+      setAssignedOrders([]);
     }
   };
 

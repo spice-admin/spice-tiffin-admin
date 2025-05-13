@@ -48,9 +48,17 @@ export const menu = [
       { title: "Orders", href: "/orders", icon: ClipboardList },
       { title: "Drivers", href: "/drivers", icon: Truck },
       { title: "Delivery Dates", href: "/delivery-dates", icon: CalendarDays },
-      { title: "Routes", href: "/delivery-management", icon: Truck },
+      { title: "Delivery Assign", href: "/delivery-assignment", icon: Truck },
       { title: "Cities", href: "/cities", icon: Building2 },
       { title: "Today's Deliveries", href: "/daily-delivery", icon: Building2 },
+    ],
+  },
+
+  {
+    label: "Route Management",
+    items: [
+      { title: "Optimized Routes ", href: "/optimized-routes", icon: Truck },
+      { title: "Route Optimization", href: "/route-optimization", icon: Truck },
     ],
   },
   // {
