@@ -4998,5 +4998,10 @@ ul.listree-submenu-items li a {
     min-width: 120px;
 }
 
+.chartjs-chart-container {
+  position: relative; /* Important for maintainAspectRatio: false */
+  height: 350px;    /* Or whatever height you set on the <Bar /> component */
+  width: 100%;
+}
 
 
