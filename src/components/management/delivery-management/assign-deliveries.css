@@ -1,113 +1,618 @@
-.assign-deliveries-wrapper {
-  padding: 24px;
-  background-color: #f0f4f8;
-  min-height: 100vh;
+/* src/styles/AssignDeliveries.css */
+
+/* --- General Module & Typography --- */
+.delivery-assignment-module {
+  padding: 20px 25px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  color: #374151; /* gray-700 */
+  background-color: #f9fafb; /* gray-50 */
 }
 
-.filter-section {
+.delivery-assignment-module h1 {
+  font-size: 1.875rem; /* text-3xl */
+  color: #111827; /* gray-900 */
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e7eb; /* gray-200 */
+  font-weight: 600;
+}
+
+.delivery-assignment-module h2 {
+  font-size: 1.25rem; /* text-xl */
+  color: #1f2937; /* gray-800 */
+  margin-top: 32px;
+  margin-bottom: 16px;
+  font-weight: 600;
+}
+
+.delivery-assignment-module h3 {
+  font-size: 1.125rem; /* text-lg */
+  color: #374151; /* gray-700 */
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.delivery-assignment-module h4 {
+  font-size: 1rem; /* text-base */
+  color: #374151; /* gray-700 */
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+/* --- Operation Status --- */
+.operation-status {
+  padding: 12px 18px;
+  margin-bottom: 24px;
+  border-radius: 8px;
+  font-weight: 500;
+  border-left-width: 5px;
+  font-size: 1rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.operation-status strong { display: block; margin-bottom: 4px; }
+.operation-status p { margin: 0; font-size: 0.9em; }
+.operation-status.status-open {
+  background-color: #ecfdf5; /* green-50 */
+  border-left-color: #22c55e; /* green-500 */
+  color: #065f46; /* green-800 */
+}
+.operation-status.status-closed {
+  background-color: #fff1f2; /* rose-50 */
+  border-left-color: #f43f5e; /* rose-500 */
+  color: #9f1239; /* rose-800 */
+}
+
+/* --- Filters Area --- */
+.filters-container {
+  margin-bottom: 24px;
   display: flex;
   gap: 16px;
-  margin-bottom: 16px;
-}
-
-.filter-section select {
-  padding: 8px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-}
-
-.assign-btn {
-  background-color: #3498db;
-  color: #fff;
-  padding: 8px 16px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.assign-btn:hover {
-  background-color: #2980b9;
-}
-
-.delivery-table {
-  width: 100%;
-  background-color: #fff;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-  margin-bottom: 16px;
-}
-
-.delivery-table th,
-.delivery-table td {
-  padding: 12px;
-  text-align: left;
-  border-bottom: 1px solid #ddd;
-}
-
-.delivery-table th {
-  background-color: #3498db;
-  color: #fff;
-  text-transform: uppercase;
-}
-
-.no-data {
-  text-align: center;
+  align-items: flex-end;
+  flex-wrap: wrap;
   padding: 16px;
-  color: #777;
+  background-color: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb; /* gray-200 */
+}
+.filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.filters-container label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #4b5568; /* gray-600 */
+}
+.filters-container input[type="date"],
+.filters-container select {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db; /* gray-300 */
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background-color: #fff;
+  min-width: 200px;
+}
+.filters-container input[type="date"]:focus,
+.filters-container select:focus {
+  outline: none;
+  border-color: #3b82f6; /* blue-500 */
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
+}
+.filters-container input:disabled,
+.filters-container select:disabled {
+  background-color: #f3f4f6; /* gray-100 */
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
-.assigned-table {
-  width: 100%;
-  background-color: #fff;
+/* --- Geocoding Section --- */
+.geocoding-section {
+  margin-bottom: 24px;
+  padding: 16px;
+  background-color: #eff6ff; /* blue-50 */
+  border: 1px solid #bfdbfe; /* blue-200 */
   border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.button-geocode {
+  background-color: #3b82f6; /* blue-500 */
+  color: white;
+}
+.button-geocode:hover:not(:disabled) {
+  background-color: #2563eb; /* blue-600 */
+}
+.geocoding-progress-bar-container {
+  width: 100%;
+  height: 8px;
+  background-color: #e0e0e0;
+  border-radius: 4px;
   overflow: hidden;
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  margin-top: 5px;
+}
+.geocoding-progress-bar {
+  height: 100%;
+  background-color: #3b82f6; /* blue-500 */
+  transition: width 0.3s ease-in-out;
+}
+.geocoding-message {
+  margin-top: 5px;
+  font-size: 0.875em;
+  color: #374151; /* gray-700 */
+}
+.geocoding-message[style*="color: green"] { /* For completion message */
+    font-weight: 500;
+}
+
+
+/* --- Map and Orders Layout --- */
+.map-and-orders-container {
+  display: flex;
+  flex-direction: column; /* Default stack: map above orders */
+  gap: 24px;
   margin-top: 24px;
 }
 
-.assigned-table th,
-.assigned-table td {
-  padding: 12px;
-  text-align: left;
-  border-bottom: 1px solid #ddd;
+/* --- Map Container --- */
+.map-view-container {
+    padding: 16px;
+    background-color: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
 }
-
-.assigned-table th {
-  background-color: #3498db;
-  color: #fff;
-}
-
-.driver-link {
-  color: #3498db;
-  text-decoration: none;
-}
-
-.driver-link:hover {
-  text-decoration: underline;
-}
-
-.no-data {
+.order-map-placeholder {
+  width: 100%;
+  height: 350px; /* Adjust as needed */
+  background-color: #e9ecef; /* Light gray placeholder */
+  border: 1px dashed #ced4da;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  padding: 16px;
-  color: #777;
+  color: #6c757d; /* Gray text */
+  font-size: 0.9rem;
+}
+.order-map-placeholder p {
+  margin: 5px 0;
 }
 
-.confirm-section {
-  margin-top: 16px;
-  text-align: right;
-}
-
-.confirm-btn {
-  background-color: #3498db;
-  color: #fff;
-  padding: 10px 20px;
-  border: none;
+/* --- Sections (Assignable, Staged, Confirmed) --- */
+.section-assignable-orders,
+.section-staged-assignments,
+.section-confirmed-assignments {
+  padding: 20px;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb; /* gray-200 */
   border-radius: 8px;
-  cursor: pointer;
-  font-weight: bold;
 }
 
-.confirm-btn:hover {
-  background-color: #2980b9;
+/* --- Table Wrapper for Horizontal Scroll on Small Screens --- */
+.table-wrapper {
+  overflow-x: auto;
+  width: 100%;
+}
+
+table {
+  width: 100%;
+  min-width: 600px; /* Ensures table content isn't too squished before scroll appears */
+  border-collapse: collapse;
+  margin-top: 16px;
+  font-size: 0.875rem; /* 14px */
+}
+th, td {
+  border: 1px solid #e5e7eb; /* gray-200 */
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap; /* Keep content on one line, relies on scroll */
+}
+th {
+  background-color: #f9fafb; /* gray-50 */
+  font-weight: 600;
+  color: #374151; /* gray-700 */
+  text-transform: uppercase;
+  font-size: 0.75rem; /* 12px */
+  letter-spacing: 0.05em;
+}
+tbody tr:nth-child(even) {
+  background-color: #f9fafb;
+}
+tbody tr:hover {
+  background-color: #f0f9ff; /* blue-50 for hover */
+}
+td input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #3b82f6; /* blue-500 for checkbox */
+}
+td.geocode-status { font-size: 0.8em; text-align: center; }
+.status-geocoded-success { color: #16a34a; /* green-600 */ }
+.status-geocoded-error { color: #ef4444; /* red-500 */ }
+.status-geocoded-needed { color: #6b7280; /* gray-500 */ }
+
+
+/* --- Buttons --- */
+.button { /* General button class, then specific ones */
+  color: white;
+  padding: 9px 15px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 16px;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.button:disabled {
+  background-color: #d1d5db; /* gray-300 */
+  color: #6b7280; /* gray-500 */
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.button-stage { background-color: #2563eb; /* blue-600 */ }
+.button-stage:hover:not(:disabled) { background-color: #1d4ed8; /* blue-700 */ }
+
+.button-confirm-all { background-color: #16a34a; /* green-600 */ }
+.button-confirm-all:hover:not(:disabled) { background-color: #15803d; /* green-700 */ }
+
+/* --- Staged Assignments --- */
+.staged-driver-group {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background-color: #f9fafb; /* gray-50 */
+  border: 1px solid #e5e7eb; /* gray-200 */
+  border-radius: 6px;
+}
+.staged-driver-group h4 {
+  color: #1e3a8a; /* blue-800 for driver name */
+  margin-bottom: 8px;
+}
+.staged-driver-group ul { list-style: none; padding-left: 0; margin: 0; }
+.staged-driver-group li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f3f4f6; /* gray-100 */
+  font-size: 0.875rem;
+}
+.staged-driver-group li:last-child { border-bottom: none; }
+.button-unstage {
+  background-color: #ef4444; /* red-500 */
+  color: white;
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+.button-unstage:hover:not(:disabled) { background-color: #dc2626; /* red-600 */ }
+
+
+/* --- Confirmed Assignments Filter --- */
+.confirmed-header-with-filter {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap; /* Allow filter to wrap on small screens */
+    gap: 10px; /* Space between title and filter */
+    margin-bottom: 10px; /* Space below this header */
+}
+.confirmed-assignments-filter {
+  /* No specific margin-bottom here as it's part of confirmed-header-with-filter */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.confirmed-assignments-filter label {
+  font-weight: 500;
+  color: #4b5568;
+  font-size: 0.875rem;
+}
+.confirmed-assignments-filter select {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db; /* gray-300 */
+  background-color: #fff;
+  min-width: 180px;
+  font-size: 0.9rem;
+}
+.confirmed-assignments-filter select:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+}
+
+
+/* --- Loading & Error Placeholders --- */
+.loading-placeholder, .error-message {
+  padding: 16px;
+  text-align: center;
+  font-size: 0.95rem;
+  color: #6b7280; /* gray-500 */
+  background-color: #f9fafb; /* gray-50 */
+  border: 1px dashed #e5e7eb; /* gray-200 */
+  border-radius: 6px;
+  margin-top: 10px;
+}
+.error-message {
+  color: #991b1b; /* red-800 */
+  background-color: #fee2e2; /* red-100 */
+  border-color: #fca5a5; /* red-300 */
+  font-weight: 500;
+}
+
+/* --- Responsive Adjustments --- */
+@media (min-width: 768px) { /* md breakpoint */
+  .map-and-orders-container {
+    /* Example: Side-by-side layout for map and orders table on larger screens */
+    flex-direction: row; 
+  }
+  /* If side-by-side: */
+  .map-view-container { flex: 1 1 40%; order: 1; }
+  .section-assignable-orders { flex: 1 1 60%; order: 2; } 
+
+  th, td {
+      white-space: normal; /* Allow text wrapping on larger screens */
+  }
+}
+@media (max-width: 640px) { /* sm breakpoint */
+  .filters-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filters-container .filter-item,
+  .filters-container input[type="date"],
+  .filters-container select {
+    width: 100%;
+  }
+  .confirmed-header-with-filter {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .confirmed-assignments-filter {
+    width: 100%;
+    margin-top: 10px;
+  }
+  .confirmed-assignments-filter select {
+    flex-grow: 1;
+  }
+  .button { /* General button class */
+    width: 100%; /* Make buttons full width on small screens */
+  }
+  .button-stage, .button-confirm-all {
+     width: auto; /* Allow these specific main action buttons to shrink if content allows */
+     flex-grow: 1; /* Allow them to grow if in a flex container */
+  }
+  .staged-driver-group li {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  .button-unstage {
+    margin-top: 5px;
+  }
+}
+
+/* Add to src/styles/AssignDeliveries.css */
+
+/* Styles for the div where the map will be rendered */
+.order-map-render-area {
+  width: 100%;
+  height: 400px; /* Or any desired height */
+  border-radius: 8px;
+  overflow: hidden; /* Important for map corners */
+}
+
+/* Placeholder styling if the map itself doesn't load, 
+   or you can remove the placeholder div's content once the map is integrated */
+.order-map-placeholder {
+  width: 100%;
+  height: 400px;
+  background-color: #f0f2f5;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+.order-map-placeholder p {
+  margin: 5px 0;
+}
+
+/* Custom Marker (Optional - Mapbox default marker is a blue pin) */
+/* The example above uses an inline SVG for the marker */
+.order-marker {
+  /* If you want a custom image or more complex CSS marker */
+  /* background-image: url('/path/to/your-custom-marker.png'); */
+  /* width: 30px; */
+  /* height: 30px; */
+  /* background-size: cover; */
+  cursor: pointer;
+}
+
+/* Mapbox popup customization (optional) */
+.mapboxgl-popup-content {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  padding: 10px 12px !important; /* Important to override default */
+  border-radius: 6px !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+}
+.mapboxgl-popup-content h4 {
+  margin: 0 0 8px 0;
+  font-size: 1rem;
+  color: #111827;
+  font-weight: 600;
+}
+.mapboxgl-popup-content p {
+  margin: 4px 0;
+  font-size: 0.85rem;
+  color: #374151;
+}
+.mapboxgl-popup-close-button {
+  font-size: 1.5rem;
+  padding: 0 5px !important;
+  color: #6b7280;
+}
+
+/* Add to src/styles/AssignDeliveries.css (or your RouteOptimization.css) */
+
+.order-map-render-area {
+  width: 100%;
+  height: 450px; /* Increased height for better route visibility */
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #d1d5db; /* gray-300 */
+}
+
+.map-marker {
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  border-radius: 50%;
+}
+
+.start-marker svg { /* Style for the SVG if used as innerHTML */
+  width: 30px;
+  height: 30px;
+}
+
+.stop-marker .marker-pin {
+  background-color: #ef4444; /* Red-500 */
+  color: white;
+  width: 26px;  /* Slightly larger for better text fit */
+  height: 26px; /* Slightly larger */
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px; /* Adjust for readability */
+  font-weight: bold;
+  border: 1.5px solid white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  line-height: 1; /* Ensure number is centered vertically */
+}
+
+.stop-marker .marker-pin div { /* The number inside */
+  transform: rotate(45deg);
+  font-size: 0.8em;
+}
+/* More advanced numbered marker using CSS */
+.stop-marker .marker-pin::before {
+  content: attr(data-number); /* You would set data-number attribute on the div */
+  transform: rotate(45deg);
+  font-size: 12px;
+  line-height: 1;
+}
+/* Simpler: The JS sets innerHTML for numbered marker */
+.stop-marker .marker-pin {
+  background-color: #ef4444;
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  border: 1px solid white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+
+/* Mapbox popup customization (from previous step, ensure it's present) */
+.mapboxgl-popup-content {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  padding: 10px 12px !important; 
+  border-radius: 6px !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+}
+.mapboxgl-popup-content h4 { margin: 0 0 8px 0; font-size: 1rem; color: #111827; font-weight: 600; }
+.mapboxgl-popup-content p { margin: 4px 0; font-size: 0.85rem; color: #374151; }
+.mapboxgl-popup-close-button { font-size: 1.5rem; padding: 0 5px !important; color: #6b7280; }
+
+.optimized-sequence-list li {
+  /* ... existing styles for li ... */
+  position: relative; /* For button positioning if needed, or just use flow */
+}
+
+.button-view-proof {
+  background-color: #0ea5e9; /* sky-500 */
+  color: white;
+  padding: 4px 8px;
+  font-size: 0.8em;
+  border-radius: 4px;
+  margin-left: 10px; /* Space it from status */
+  cursor: pointer;
+  border: none;
+}
+.button-view-proof:hover {
+  background-color: #0284c7; /* sky-600 */
+}
+
+/* --- Modal Styles --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000; /* Ensure it's on top */
+}
+
+.modal-content {
+  background-color: #fff;
+  padding: 25px;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto; /* Scroll if image is too big */
+  position: relative;
+}
+
+.modal-content h4 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #333;
+  font-size: 1.2rem;
+  text-align: center;
+}
+
+.modal-close-button {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 1.8rem;
+  color: #888;
+  cursor: pointer;
+  line-height: 1;
+}
+.modal-close-button:hover {
+  color: #333;
 }

@@ -5,8 +5,7 @@ import ProtectDashboard from "../components/auth/ProtectDashboard";
 import Leftbar from "../components/dashboard/Leftbar.astro";
 import Topbar from "../components/dashboard/Topbar.astro";
 import PageTitle from "../components/dashboard/PageTitle.astro";
-import OrderManagerWrapper from "@components/management/order-management/OrderManagerWrapper";
-import RouteOptimizationComp from "@components/management/delivery-management/RouteOptimizationComp";
+import RouteOptimizationView from "@components/management/delivery-management/RouteOptimizationView";
 
 const pageTitle = "Route Optimization";
 ---
@@ -27,7 +26,7 @@ const pageTitle = "Route Optimization";
         <div class="row">
           <div class="col-lg-12">
             {/* Render the React component for orders */}
-            <RouteOptimizationComp client:load />
+            <RouteOptimizationView client:load />
           </div>
         </div>
       </div>
