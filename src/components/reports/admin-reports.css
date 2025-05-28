@@ -1,0 +1,206 @@
+/* src/styles/admin-reports.css */
+.sales-reports-view {
+  padding: 1rem 0;
+}
+
+.report-filters {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+.report-filters select,
+.report-filters input[type="date"] {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db; /* gray-300 */
+  border-radius: 6px;
+}
+
+.summary-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card-item {
+  background-color: #fff;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  text-align: center;
+}
+.stat-card-item h4 {
+  font-size: 1.75rem; /* text-2xl or 3xl */
+  font-weight: 700;
+  color: #16a34a; /* green-600 example for positive stats */
+  margin: 0 0 0.25rem 0;
+}
+.stat-card-item p {
+  font-size: 0.875rem; /* text-sm */
+  color: #6b7280; /* gray-500 */
+  margin: 0;
+}
+
+.chart-container {
+  background-color: #fff;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+}
+.chart-container h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.report-loading,
+.report-error,
+.report-placeholder {
+  padding: 2rem;
+  text-align: center;
+  font-size: 1rem;
+  color: #6b7280;
+}
+.report-error {
+  color: #ef4444; /* red-500 */
+}
+
+/* src/styles/admin-reports.css */
+.sales-reports-view {
+  padding: 1rem 0;
+}
+
+.report-filters {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-wrap: wrap; /* Allow buttons to wrap */
+  gap: 0.75rem; /* Space between filter buttons/inputs */
+  align-items: center;
+}
+
+.filter-button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db; /* gray-300 */
+  background-color: #fff;
+  color: #374151; /* gray-700 */
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+.filter-button:hover {
+  background-color: #f3f4f6; /* gray-100 */
+}
+.filter-button.active {
+  background-color: #3b82f6; /* blue-500 */
+  color: white;
+  border-color: #3b82f6;
+}
+.filter-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.custom-date-range-picker {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-left: 0.5rem; /* Space from "Custom Range" button */
+}
+.custom-date-range-picker input[type="date"] {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+.custom-date-range-picker span {
+  color: #6b7280; /* gray-500 */
+}
+.apply-custom-btn {
+  /* If you style it differently from other filter-buttons */
+  background-color: #16a34a; /* green-600 */
+  color: white;
+}
+.apply-custom-btn:hover {
+  background-color: #15803d; /* green-700 */
+}
+
+.summary-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(180px, 1fr)
+  ); /* More items can fit */
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card-item {
+  background-color: #fff;
+  padding: 1.25rem; /* Adjusted padding */
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  text-align: left; /* Align text left for better readability */
+}
+.stat-card-item h4 {
+  /* Value */
+  font-size: 1.5rem; /* text-xl */
+  font-weight: 700;
+  color: #111827; /* gray-900 */
+  margin: 0 0 0.25rem 0;
+  line-height: 1.2;
+}
+.stat-card-item p {
+  /* Label */
+  font-size: 0.875rem;
+  color: #6b7280; /* gray-500 */
+  margin: 0;
+}
+
+.chart-container {
+  background-color: #fff;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+  position: relative; /* For chartjs responsiveness */
+  height: 400px; /* Give explicit height */
+}
+.chart-container h3 {
+  /* Chart specific title if any */
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.125rem; /* text-lg */
+  font-weight: 600;
+  color: #374151;
+}
+
+.report-loading,
+.report-error,
+.report-placeholder {
+  min-height: 200px; /* Ensure placeholders have some height */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+  font-size: 1rem;
+  color: #6b7280;
+  background-color: #f9fafb;
+  border-radius: 6px;
+}
+.report-error {
+  color: #ef4444;
+  background-color: #fee2e2;
+}

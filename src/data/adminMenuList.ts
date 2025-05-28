@@ -28,7 +28,11 @@ import {
 export const menu = [
   {
     label: "Dashboard",
-    items: [{ title: "Overview", href: "/dashboard", icon: Home }],
+    items: [
+      { title: "Overview", href: "/dashboard", icon: Home },
+
+      { title: "Repoerts", href: "/reports", icon: Receipt },
+    ],
   },
   {
     label: "Subscription Management",
