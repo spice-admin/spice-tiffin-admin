@@ -22,6 +22,7 @@ import {
   LogOut,
   ShieldCheck,
   Building2,
+  ShoppingBag,
 } from "@lucide/astro";
 
 export const menu = [
@@ -50,7 +51,16 @@ export const menu = [
       { title: "Delivery Dates", href: "/delivery-dates", icon: CalendarDays },
       { title: "Delivery Assign", href: "/delivery-assignment", icon: Truck },
       { title: "Cities", href: "/cities", icon: Building2 },
-      { title: "Today's Deliveries", href: "/daily-delivery", icon: Building2 },
+      {
+        title: "Today's Deliveries",
+        href: "/daily-delivery",
+        icon: ShoppingBag,
+      },
+      {
+        title: "Today's Addon Orders",
+        href: "/todays-addons",
+        icon: ShoppingBag,
+      },
     ],
   },
 
